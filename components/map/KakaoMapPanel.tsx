@@ -4,23 +4,43 @@ import { CustomOverlayMap, Map, Polyline } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { MapPinOff } from "lucide-react";
 import type { EducationOffice } from "@/lib/regions";
-import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution } from "@/lib/types";
+import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution, type TripWaypoint } from "@/lib/types";
+import { waypointsEqual } from "@/lib/waypoints";
 
 interface KakaoMapPanelProps {
   office: EducationOffice;
   selected: Institution[];
   days: DailyRoute[];
   activeDayId: string | null;
+  startPoint: TripWaypoint;
+  returnPoint: TripWaypoint;
 }
 
-export default function KakaoMapPanel({ office, selected, days, activeDayId }: KakaoMapPanelProps) {
+export default function KakaoMapPanel({
+  office,
+  selected,
+  days,
+  activeDayId,
+  startPoint,
+  returnPoint,
+}: KakaoMapPanelProps) {
   const appkey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY ?? "";
 
   if (!appkey) {
     return <MapPlaceholder message="카카오맵 키가 없습니다. .env.local에 NEXT_PUBLIC_KAKAO_MAP_KEY를 넣어 주세요." />;
   }
 
-  return <KakaoMapInner appkey={appkey} office={office} selected={selected} days={days} activeDayId={activeDayId} />;
+  return (
+    <KakaoMapInner
+      appkey={appkey}
+      office={office}
+      selected={selected}
+      days={days}
+      activeDayId={activeDayId}
+      startPoint={startPoint}
+      returnPoint={returnPoint}
+    />
+  );
 }
 
 function KakaoMapInner({
@@ -29,6 +49,8 @@ function KakaoMapInner({
   selected,
   days,
   activeDayId,
+  startPoint,
+  returnPoint,
 }: KakaoMapPanelProps & { appkey: string }) {
   const [loading, error] = useKakaoLoader({
     appkey,
@@ -52,6 +74,25 @@ function KakaoMapInner({
   const activeDay = days.find((day) => day.id === activeDayId) ?? days[0];
   const overlayStops = activeDay?.stops.filter((stop) => hasCoordinates(stop.institution)) ?? [];
   const selectedPins = selected.filter(hasCoordinates);
+  const firstStop = overlayStops[0]?.institution;
+  const lastStop = overlayStops[overlayStops.length - 1]?.institution;
+  const sameDepot = waypointsEqual(startPoint, returnPoint);
+
+  const commuteOut =
+    firstStop && hasCoordinates(firstStop)
+      ? [
+          { lat: startPoint.lat, lng: startPoint.lng },
+          { lat: firstStop.lat, lng: firstStop.lng },
+        ]
+      : [];
+  const commuteBack =
+    lastStop && hasCoordinates(lastStop)
+      ? [
+          { lat: lastStop.lat, lng: lastStop.lng },
+          { lat: returnPoint.lat, lng: returnPoint.lng },
+        ]
+      : [];
+  const activeColor = DAY_COLORS[Math.max(0, days.findIndex((day) => day.id === activeDay?.id)) % DAY_COLORS.length];
 
   return (
     <Map
@@ -81,6 +122,25 @@ function KakaoMapInner({
         );
       })}
 
+      {activeDay && commuteOut.length === 2 ? (
+        <Polyline
+          path={commuteOut}
+          strokeWeight={4}
+          strokeColor={activeColor}
+          strokeOpacity={0.7}
+          strokeStyle="dash"
+        />
+      ) : null}
+      {activeDay && commuteBack.length === 2 ? (
+        <Polyline
+          path={commuteBack}
+          strokeWeight={4}
+          strokeColor={activeColor}
+          strokeOpacity={0.7}
+          strokeStyle="dash"
+        />
+      ) : null}
+
       {selectedPins.map((item) => (
         <CustomOverlayMap key={`sel-${item.id}`} position={{ lat: item.lat, lng: item.lng }} xAnchor={0.5} yAnchor={1.35}>
           <div className="rounded-full bg-slate-800 px-2 py-1 text-[10px] font-medium text-white shadow">
@@ -104,6 +164,19 @@ function KakaoMapInner({
           </CustomOverlayMap>
         );
       })}
+
+      <CustomOverlayMap position={{ lat: startPoint.lat, lng: startPoint.lng }} xAnchor={0.5} yAnchor={1.15}>
+        <div className="rounded-full bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white shadow">
+          {sameDepot ? "출발·복귀" : "출발"}
+        </div>
+      </CustomOverlayMap>
+      {sameDepot ? null : (
+        <CustomOverlayMap position={{ lat: returnPoint.lat, lng: returnPoint.lng }} xAnchor={0.5} yAnchor={1.15}>
+          <div className="rounded-full bg-indigo-700 px-2 py-1 text-[10px] font-semibold text-white shadow">
+            복귀
+          </div>
+        </CustomOverlayMap>
+      )}
     </Map>
   );
 }

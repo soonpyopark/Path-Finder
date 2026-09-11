@@ -2,16 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { MapPin, Route, X } from "lucide-react";
-import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution } from "@/lib/types";
+import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution, type TripWaypoint } from "@/lib/types";
+import { waypointsEqual } from "@/lib/waypoints";
 
 interface RouteCardListProps {
   days: DailyRoute[];
   unassigned: Institution[];
   activeDayId: string | null;
   onSelectDay: (id: string) => void;
+  startPoint: TripWaypoint;
+  returnPoint: TripWaypoint;
 }
 
-export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: RouteCardListProps) {
+export function RouteCardList({
+  days,
+  unassigned,
+  activeDayId,
+  onSelectDay,
+  startPoint,
+  returnPoint,
+}: RouteCardListProps) {
   const [showAll, setShowAll] = useState(false);
   const assignedCount = days.reduce((sum, day) => sum + day.stops.length, 0);
   const totalDistance = Number(days.reduce((sum, day) => sum + day.totalDistanceKm, 0).toFixed(1));
@@ -100,7 +110,12 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
         {showingUnassigned ? (
           <UnassignedDetail items={unassigned} />
         ) : activeDay ? (
-          <DayDetail day={activeDay} color={DAY_COLORS[days.findIndex((item) => item.id === activeDay.id) % DAY_COLORS.length]} />
+          <DayDetail
+            day={activeDay}
+            color={DAY_COLORS[days.findIndex((item) => item.id === activeDay.id) % DAY_COLORS.length]}
+            startPoint={startPoint}
+            returnPoint={returnPoint}
+          />
         ) : null}
       </div>
 
@@ -109,6 +124,8 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
           days={days}
           unassigned={unassigned}
           summary={summary}
+          startPoint={startPoint}
+          returnPoint={returnPoint}
           onClose={() => setShowAll(false)}
         />
       ) : null}
@@ -116,7 +133,52 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
   );
 }
 
-function DayDetail({ day, color }: { day: DailyRoute; color: string }) {
+function DepotRow({
+  label,
+  point,
+  distanceKm,
+}: {
+  label: string;
+  point: TripWaypoint;
+  distanceKm?: number;
+}) {
+  return (
+    <li className="flex gap-3 rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2.5">
+      <span className="mt-0.5 inline-flex h-6 shrink-0 items-center justify-center rounded-full bg-slate-800 px-2 text-[10px] font-bold text-white">
+        {label}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="truncate font-medium text-slate-900">{point.name}</span>
+          {distanceKm !== undefined ? (
+            <span className="shrink-0 text-xs font-medium text-slate-500">+{distanceKm.toFixed(2)} km</span>
+          ) : null}
+        </span>
+        {point.address ? (
+          <span className="mt-0.5 flex items-start gap-1 text-xs text-slate-500">
+            <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+            <span className="min-w-0">
+              {point.district ? `${point.district} · ` : ""}
+              {point.address}
+            </span>
+          </span>
+        ) : null}
+      </span>
+    </li>
+  );
+}
+
+function DayDetail({
+  day,
+  color,
+  startPoint,
+  returnPoint,
+}: {
+  day: DailyRoute;
+  color: string;
+  startPoint: TripWaypoint;
+  returnPoint: TripWaypoint;
+}) {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
@@ -131,6 +193,7 @@ function DayDetail({ day, color }: { day: DailyRoute; color: string }) {
         </p>
       </div>
       <ol className="panel-scroll min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+        <DepotRow label="출발" point={startPoint} />
         {day.stops.map((stop) => (
           <li key={`${day.id}-${stop.institution.id}`} className="flex gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
             <span
@@ -142,9 +205,7 @@ function DayDetail({ day, color }: { day: DailyRoute; color: string }) {
             <span className="min-w-0 flex-1">
               <span className="flex items-center justify-between gap-2">
                 <span className="truncate font-medium text-slate-900">{stop.institution.name}</span>
-                <span className="shrink-0 text-xs font-medium text-slate-500">
-                  {stop.order === 1 ? "시작" : `+${stop.distanceFromPrevKm} km`}
-                </span>
+                <span className="shrink-0 text-xs font-medium text-slate-500">+{stop.distanceFromPrevKm} km</span>
               </span>
               <span className="mt-0.5 flex items-start gap-1 text-xs text-slate-500">
                 <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
@@ -156,6 +217,7 @@ function DayDetail({ day, color }: { day: DailyRoute; color: string }) {
             </span>
           </li>
         ))}
+        <DepotRow label="복귀" point={returnPoint} distanceKm={day.commuteToReturnKm} />
       </ol>
     </div>
   );
@@ -189,13 +251,18 @@ function AllDaysModal({
   days,
   unassigned,
   summary,
+  startPoint,
+  returnPoint,
   onClose,
 }: {
   days: DailyRoute[];
   unassigned: Institution[];
   summary: string;
+  startPoint: TripWaypoint;
+  returnPoint: TripWaypoint;
   onClose: () => void;
 }) {
+  const sameDepot = waypointsEqual(startPoint, returnPoint);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
       <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -203,6 +270,9 @@ function AllDaysModal({
           <div>
             <p className="text-xs font-semibold tracking-wide text-slate-500">전체 동선</p>
             <p className="text-base font-semibold text-slate-900">{summary}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {sameDepot ? `출발·복귀 ${startPoint.name}` : `출발 ${startPoint.name} · 복귀 ${returnPoint.name}`}
+            </p>
           </div>
           <button
             type="button"
@@ -225,6 +295,11 @@ function AllDaysModal({
                 </p>
               </div>
               <ol className="space-y-2">
+                <li className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-800">출발</span>
+                  {" · "}
+                  {startPoint.name}
+                </li>
                 {day.stops.map((stop) => (
                   <li key={`${day.id}-${stop.institution.id}`} className="flex gap-3 text-sm">
                     <span
@@ -237,11 +312,17 @@ function AllDaysModal({
                       <span className="font-medium text-slate-900">{stop.institution.name}</span>
                       <span className="mt-0.5 block text-xs text-slate-500">
                         {stop.institution.district} · {stop.institution.address}
-                        {stop.order === 1 ? " · 시작" : ` · +${stop.distanceFromPrevKm} km`}
+                        {` · +${stop.distanceFromPrevKm} km`}
                       </span>
                     </span>
                   </li>
                 ))}
+                <li className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-800">복귀</span>
+                  {" · "}
+                  {returnPoint.name}
+                  {` · +${day.commuteToReturnKm.toFixed(2)} km`}
+                </li>
               </ol>
             </section>
           ))}

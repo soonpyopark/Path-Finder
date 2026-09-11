@@ -23,6 +23,7 @@ import {
   type EducationOffice,
 } from "@/lib/regions";
 import type { Institution, TripSettings } from "@/lib/types";
+import { WaypointField } from "@/components/sidebar/WaypointField";
 import type { UnmatchedVisit } from "@/lib/visit-excel";
 import {
   DEFAULT_PANEL_THEME,
@@ -389,6 +390,42 @@ export function ControlPanel({
             <CalendarRange className="h-4 w-4" />
             출장 설정
           </p>
+          <WaypointField
+            label="출발지"
+            value={settings.startPoint}
+            office={office}
+            onChange={(startPoint) =>
+              onSettingsChange({
+                startPoint,
+                returnPoint: settings.returnSameAsStart ? startPoint : settings.returnPoint,
+              })
+            }
+          />
+          <button
+            type="button"
+            onClick={() =>
+              onSettingsChange({
+                returnSameAsStart: !settings.returnSameAsStart,
+                returnPoint: settings.startPoint,
+              })
+            }
+            aria-pressed={settings.returnSameAsStart}
+            className={`w-full rounded-lg px-3 py-2 text-left text-xs ${
+              settings.returnSameAsStart
+                ? "bg-emerald-500/20 text-emerald-200"
+                : "bg-black/20 text-slate-300"
+            }`}
+          >
+            {settings.returnSameAsStart ? "복귀지점 = 출발지와 같음" : "복귀지점 따로 지정"}
+          </button>
+          {settings.returnSameAsStart ? null : (
+            <WaypointField
+              label="복귀지점"
+              value={settings.returnPoint}
+              office={office}
+              onChange={(returnPoint) => onSettingsChange({ returnPoint, returnSameAsStart: false })}
+            />
+          )}
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
             <label className="block min-w-0 text-xs text-slate-400">
               일 최대 방문 가능 기관(학교) 수

@@ -1,5 +1,5 @@
 import { DAEGU_DIRECT_INSTITUTIONS } from "@/lib/daegu-direct-institutions";
-import { DEFAULT_OFFICE_CODE, matchesSelectedOffice } from "@/lib/regions";
+import { DEFAULT_OFFICE_CODE, matchesSelectedOffice, NATIONWIDE_OFFICE_CODE } from "@/lib/regions";
 import type { Institution } from "@/lib/types";
 
 const CITY_HQ_KEYWORDS = ["본청", "시교육청"];
@@ -212,19 +212,31 @@ function institutionListRank(item: Institution): number {
   return 2;
 }
 
-function matchesHeadquartersQuery(item: Institution, query: string): boolean {
+function isHeadquarters(item: Institution): boolean {
   const keywords = item.keywords ?? [];
   const name = item.name;
-  if (name.includes("지원청")) return false;
-
-  const isHq =
+  if (item.type !== "office" || name.includes("지원청") || keywords.includes("지원청")) return false;
+  return (
     keywords.includes("본청") ||
     name.includes("시교육청") ||
     name.includes("도교육청") ||
     name.includes("특별시교육청") ||
     name.includes("자치시교육청") ||
-    name.includes("자치도교육청");
-  if (!isHq) return false;
+    name.includes("자치도교육청")
+  );
+}
+
+export function findOfficeHeadquarters(officeCode: string): Institution | undefined {
+  if (officeCode === NATIONWIDE_OFFICE_CODE) return undefined;
+  return DUMMY_INSTITUTIONS.find(
+    (item) => isHeadquarters(item) && matchesSelectedOffice(item.officeCode, officeCode),
+  );
+}
+
+function matchesHeadquartersQuery(item: Institution, query: string): boolean {
+  if (!isHeadquarters(item)) return false;
+  const keywords = item.keywords ?? [];
+  const name = item.name;
 
   if (query === "본청") return true;
   if (query === "시교육청") {

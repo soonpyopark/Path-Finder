@@ -9,9 +9,10 @@ import { DAEGU_OFFICE_SEARCH_SHORTCUTS } from "@/lib/daegu-direct-institutions";
 import { ensureCoordinates } from "@/lib/geocode";
 import { searchKakaoPlaces } from "@/lib/kakao-places";
 import { exportRoutePlanToExcel } from "@/lib/export-excel";
-import { DEFAULT_OFFICE_CODE, getEducationOffice, NATIONWIDE_OFFICE_CODE } from "@/lib/regions";
+import { DEFAULT_OFFICE_CODE, getEducationOffice, NATIONWIDE_OFFICE_CODE, type EducationOffice } from "@/lib/regions";
 import { addDaysISO, buildRoutePlan, suggestedVisitsPerDay, todayISO } from "@/lib/route-optimizer";
 import type { Institution, RoutePlan, TripSettings } from "@/lib/types";
+import { isOfficeDefaultWaypoint, resolvedReturnPoint, waypointFromOffice } from "@/lib/waypoints";
 import {
   downloadVisitTemplate,
   matchVisitRows,
@@ -22,14 +23,18 @@ import {
   type VisitRow,
 } from "@/lib/visit-excel";
 
-function createDefaultSettings(selectedCount = 0): TripSettings {
+function createDefaultSettings(office: EducationOffice = getEducationOffice(DEFAULT_OFFICE_CODE), selectedCount = 0): TripSettings {
   const startDate = todayISO();
   const endDate = addDaysISO(startDate, 6);
+  const waypoint = waypointFromOffice(office);
   return {
     startDate,
     endDate,
     includeWeekends: false,
     visitsPerDay: suggestedVisitsPerDay(selectedCount, startDate, endDate, false),
+    startPoint: waypoint,
+    returnPoint: waypoint,
+    returnSameAsStart: true,
   };
 }
 
@@ -74,6 +79,21 @@ export function PathFinderApp() {
   const [unmatched, setUnmatched] = useState<UnmatchedVisit[]>([]);
 
   const office = useMemo(() => getEducationOffice(officeCode), [officeCode]);
+
+  useEffect(() => {
+    setSettings((current) => {
+      if (current.startPoint && current.returnPoint && typeof current.returnSameAsStart === "boolean") {
+        return current;
+      }
+      const waypoint = waypointFromOffice(office);
+      return {
+        ...current,
+        startPoint: current.startPoint ?? waypoint,
+        returnPoint: current.returnPoint ?? waypoint,
+        returnSameAsStart: current.returnSameAsStart ?? true,
+      };
+    });
+  }, [office]);
 
   useEffect(() => {
     setSettings((current) => {
@@ -169,8 +189,22 @@ export function PathFinderApp() {
   }, [query, officeCode, district, runSearch]);
 
   const handleOfficeChange = (code: string) => {
+    const previousOffice = office;
+    const nextOffice = getEducationOffice(code);
     setOfficeCode(code);
     setDistrict("all");
+    setSettings((current) => {
+      const nextDefault = waypointFromOffice(nextOffice);
+      const startFollows = isOfficeDefaultWaypoint(current.startPoint, previousOffice);
+      const returnFollows =
+        current.returnSameAsStart || isOfficeDefaultWaypoint(current.returnPoint, previousOffice);
+      const startPoint = startFollows ? nextDefault : current.startPoint;
+      return {
+        ...current,
+        startPoint,
+        returnPoint: returnFollows ? (current.returnSameAsStart ? startPoint : nextDefault) : current.returnPoint,
+      };
+    });
   };
 
   const toggleInstitution = (institution: Institution) => {
@@ -265,7 +299,7 @@ export function PathFinderApp() {
         ),
       };
       setSettings(nextSettings);
-      const nextPlan = buildRoutePlan(withCoords, nextSettings, office.center);
+      const nextPlan = buildRoutePlan(withCoords, nextSettings);
       setPlan(nextPlan);
       setActiveDayId(nextPlan.days[0]?.id ?? null);
     } finally {
@@ -350,6 +384,8 @@ export function PathFinderApp() {
             selected={selected}
             days={plan?.days ?? []}
             activeDayId={activeDayId}
+            startPoint={settings.startPoint}
+            returnPoint={resolvedReturnPoint(settings)}
           />
         </section>
         <section className="flex h-[42vh] min-h-[320px] max-h-[460px] min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50">
@@ -358,6 +394,8 @@ export function PathFinderApp() {
             unassigned={plan?.unassigned ?? []}
             activeDayId={activeDayId}
             onSelectDay={setActiveDayId}
+            startPoint={settings.startPoint}
+            returnPoint={resolvedReturnPoint(settings)}
           />
         </section>
       </main>

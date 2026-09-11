@@ -20,11 +20,23 @@ export interface Institution {
   keywords?: string[];
 }
 
+export interface TripWaypoint {
+  id: string;
+  name: string;
+  address: string;
+  district: string;
+  lat: number;
+  lng: number;
+}
+
 export interface TripSettings {
   visitsPerDay: number;
   startDate: string;
   endDate: string;
   includeWeekends: boolean;
+  startPoint: TripWaypoint;
+  returnPoint: TripWaypoint;
+  returnSameAsStart: boolean;
 }
 
 export interface RouteStop {
@@ -40,6 +52,7 @@ export interface DailyRoute {
   weekday: string;
   stops: RouteStop[];
   totalDistanceKm: number;
+  commuteToReturnKm: number;
 }
 
 export interface RoutePlan {

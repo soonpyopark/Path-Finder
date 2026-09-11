@@ -1,5 +1,6 @@
 import type { EducationOffice } from "@/lib/regions";
 import { hasCoordinates, type Institution, type RoutePlan, type TripSettings } from "@/lib/types";
+import { resolvedReturnPoint } from "@/lib/waypoints";
 
 function typeLabel(type: Institution["type"]): string {
   if (type === "office") return "직속기관";
@@ -30,9 +31,13 @@ export async function exportRoutePlanToExcel(options: {
     plan.days.reduce((sum, day) => sum + day.totalDistanceKm, 0).toFixed(2),
   );
 
+  const startPoint = settings.startPoint;
+  const returnPoint = resolvedReturnPoint(settings);
   const summaryRows = [
     ["항목", "내용"],
     ["지역", office.name],
+    ["출발지", startPoint ? `${startPoint.name}${startPoint.address ? ` (${startPoint.address})` : ""}` : ""],
+    ["복귀지점", returnPoint ? `${returnPoint.name}${returnPoint.address ? ` (${returnPoint.address})` : ""}` : ""],
     ["출장 기간", `${settings.startDate} ~ ${settings.endDate}`],
     ["주말", settings.includeWeekends ? "포함" : "제외"],
     ["일 최대 방문 가능 기관(학교) 수", settings.visitsPerDay],
@@ -40,6 +45,7 @@ export async function exportRoutePlanToExcel(options: {
     ["배정 기관 수", assignedCount],
     ["미배정 기관 수", plan.unassigned.length],
     ["총 이동거리(km)", totalDistanceKm],
+    ["이동거리 산정", "출발지 → 방문지 → 복귀지점"],
     ["생성일시", formatDateTime(plan.generatedAt)],
   ];
 

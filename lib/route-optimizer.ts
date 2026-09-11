@@ -6,7 +6,9 @@ import {
   type RoutePlan,
   type RouteStop,
   type TripSettings,
+  type TripWaypoint,
 } from "@/lib/types";
+import { resolvedReturnPoint } from "@/lib/waypoints";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 const EARTH_RADIUS_KM = 6371;
@@ -382,25 +384,60 @@ function heldKarpPath(points: GeoInstitution[], startIndex: number): GeoInstitut
   return order.map((index) => points[index]).filter((item): item is GeoInstitution => Boolean(item));
 }
 
-function shortestVisitOrder(points: GeoInstitution[], startCenter: MapCenter): GeoInstitution[] {
-  if (points.length <= 1) return points;
-
-  let startIndex = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  points.forEach((item, index) => {
-    const distance = haversineKm(startCenter, item);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      startIndex = index;
-    }
-  });
-
-  if (points.length <= MAX_VISITS_PER_DAY) return heldKarpPath(points, startIndex);
-  return twoOptPath(nearestNeighborFrom(points, startIndex));
+function tourLength(
+  path: GeoInstitution[],
+  startPoint: TripWaypoint,
+  returnPoint: TripWaypoint,
+): number {
+  if (path.length === 0) return 0;
+  const first = path[0];
+  const last = path[path.length - 1];
+  if (!first || !last) return 0;
+  return haversineKm(startPoint, first) + pathLength(path) + haversineKm(last, returnPoint);
 }
 
-function buildStops(institutions: Institution[]): RouteStop[] {
-  let previous: { lat: number; lng: number } | null = null;
+function orientPathTowardReturn(path: GeoInstitution[], returnPoint: TripWaypoint): GeoInstitution[] {
+  if (path.length < 2) return path;
+  const first = path[0];
+  const last = path[path.length - 1];
+  if (!first || !last) return path;
+  if (haversineKm(returnPoint, last) <= haversineKm(returnPoint, first)) return path;
+  return [...path].reverse();
+}
+
+function shortestVisitOrder(
+  points: GeoInstitution[],
+  startPoint: TripWaypoint,
+  returnPoint: TripWaypoint,
+): GeoInstitution[] {
+  if (points.length <= 1) return points;
+
+  let best = points;
+  let bestLength = Number.POSITIVE_INFINITY;
+
+  for (let startIndex = 0; startIndex < points.length; startIndex += 1) {
+    const candidate =
+      points.length <= MAX_VISITS_PER_DAY
+        ? heldKarpPath(points, startIndex)
+        : twoOptPath(nearestNeighborFrom(points, startIndex));
+    const length = tourLength(candidate, startPoint, returnPoint);
+    const last = candidate[candidate.length - 1];
+    const bestLast = best[best.length - 1];
+    const closerReturn =
+      last && bestLast
+        ? haversineKm(returnPoint, last) + 0.001 < haversineKm(returnPoint, bestLast)
+        : false;
+    if (length + 0.001 < bestLength || (Math.abs(length - bestLength) <= 0.001 && closerReturn)) {
+      bestLength = length;
+      best = candidate;
+    }
+  }
+
+  return orientPathTowardReturn(best, returnPoint);
+}
+
+function buildStops(institutions: Institution[], startPoint: TripWaypoint): RouteStop[] {
+  let previous: { lat: number; lng: number } | null = startPoint;
 
   return institutions.map((institution, index) => {
     let distanceFromPrevKm = 0;
@@ -428,6 +465,16 @@ export function buildRoutePlan(
   settings: TripSettings,
   startCenter: MapCenter = DAEGU_CENTER,
 ): RoutePlan {
+  const startPoint = settings.startPoint ?? {
+    id: "fallback-start",
+    name: "출발지",
+    address: "",
+    district: "",
+    lat: startCenter.lat,
+    lng: startCenter.lng,
+  };
+  const returnPoint = settings.startPoint ? resolvedReturnPoint(settings) : startPoint;
+  const depotCenter = { lat: startPoint.lat, lng: startPoint.lng };
   const geoPoints = institutions.filter(hasCoordinates);
   const withoutCoords = institutions.filter((item) => !hasCoordinates(item));
   const dates = workingDates(settings.startDate, settings.endDate, settings.includeWeekends);
@@ -449,13 +496,16 @@ export function buildRoutePlan(
   const overflow = ranked.slice(capacity);
   const dayCount = Math.min(dates.length, Math.max(1, Math.ceil(kept.length / maxPerDay)));
   const sizes = balancedDaySizes(kept.length, dayCount, maxPerDay);
-  const assigned = clusterByProximity(kept, sizes, startCenter).sort((left, right) =>
-    compareByOfficeDistance(left, right, startCenter),
+  const assigned = clusterByProximity(kept, sizes, depotCenter).sort((left, right) =>
+    compareByOfficeDistance(left, right, depotCenter),
   );
 
   const days: DailyRoute[] = assigned.map((cluster, index) => {
     const date = dates[index] ?? "";
-    const stops = buildStops(shortestVisitOrder(cluster, startCenter));
+    const ordered = shortestVisitOrder(cluster, startPoint, returnPoint);
+    const stops = buildStops(ordered, startPoint);
+    const lastStop = ordered[ordered.length - 1];
+    const commuteToReturnKm = lastStop ? Number(haversineKm(lastStop, returnPoint).toFixed(2)) : 0;
     const labels = formatKoreanDate(date);
 
     return {
@@ -464,8 +514,9 @@ export function buildRoutePlan(
       dayLabel: labels.dayLabel,
       weekday: labels.weekday,
       stops,
+      commuteToReturnKm,
       totalDistanceKm: Number(
-        stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0).toFixed(2),
+        (stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0) + commuteToReturnKm).toFixed(2),
       ),
     };
   });
