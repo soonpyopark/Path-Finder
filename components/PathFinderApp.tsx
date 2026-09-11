@@ -233,7 +233,7 @@ export function PathFinderApp() {
         } else if (places[0] && row.address) {
           collected.push(places[0]);
         } else {
-          stillUnmatched.push(row);
+          stillUnmatched.push({ ...row, reason: "목록에서 찾지 못함" });
         }
       }
 
