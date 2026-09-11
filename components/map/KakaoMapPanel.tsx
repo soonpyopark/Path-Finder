@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { CustomOverlayMap, Map, Polyline } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { MapPinOff } from "lucide-react";
@@ -56,6 +57,18 @@ function KakaoMapInner({
     appkey,
     libraries: ["services"],
   });
+  const mapRef = useRef<{ relayout: () => void } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = frameRef.current;
+    if (!node) return undefined;
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.relayout();
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loading, error]);
 
   if (error) {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -95,12 +108,16 @@ function KakaoMapInner({
   const activeColor = DAY_COLORS[Math.max(0, days.findIndex((day) => day.id === activeDay?.id)) % DAY_COLORS.length];
 
   return (
+    <div ref={frameRef} className="h-full w-full">
     <Map
       key={office.code}
       center={office.center}
       isPanto
       level={office.mapLevel}
       className="h-full w-full"
+      onCreate={(map) => {
+        mapRef.current = map;
+      }}
     >
       {days.map((day, dayIndex) => {
         const path = day.stops.flatMap((stop) =>
@@ -178,6 +195,7 @@ function KakaoMapInner({
         </CustomOverlayMap>
       )}
     </Map>
+    </div>
   );
 }
 

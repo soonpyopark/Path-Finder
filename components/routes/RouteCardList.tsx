@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { MapPin, Route, X } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { ChevronsDown, ChevronsUp, MapPin, Route, X } from "lucide-react";
 import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution, type TripWaypoint } from "@/lib/types";
 import { waypointsEqual } from "@/lib/waypoints";
 
@@ -12,6 +12,8 @@ interface RouteCardListProps {
   onSelectDay: (id: string) => void;
   startPoint: TripWaypoint;
   returnPoint: TripWaypoint;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }
 
 export function RouteCardList({
@@ -21,6 +23,8 @@ export function RouteCardList({
   onSelectDay,
   startPoint,
   returnPoint,
+  collapsed,
+  onToggleCollapsed,
 }: RouteCardListProps) {
   const [showAll, setShowAll] = useState(false);
   const assignedCount = days.reduce((sum, day) => sum + day.stops.length, 0);
@@ -38,31 +42,43 @@ export function RouteCardList({
 
   if (days.length === 0 && unassigned.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-        <Route className="h-6 w-6 text-slate-400" />
-        <p className="text-sm text-slate-500">좌측에서 기관을 선택한 뒤 동선을 생성하면 일자별 결과가 여기에 표시됩니다.</p>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <ResultsToolbar
+          summary={summary}
+          collapsed={collapsed}
+          onToggleCollapsed={onToggleCollapsed}
+        />
+        {collapsed ? null : (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+            <Route className="h-6 w-6 text-slate-400" />
+            <p className="text-sm text-slate-500">좌측에서 기관을 선택한 뒤 동선을 생성하면 일자별 결과가 여기에 표시됩니다.</p>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-slate-50">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-slate-500">동선 결과</p>
-          <p className="text-sm font-semibold text-slate-900">{summary}</p>
-        </div>
-        {days.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
-          >
-            전체 보기
-          </button>
-        ) : null}
-      </div>
+      <ResultsToolbar
+        summary={summary}
+        collapsed={collapsed}
+        onToggleCollapsed={onToggleCollapsed}
+        extra={
+          days.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+            >
+              전체 보기
+            </button>
+          ) : null
+        }
+      />
 
+      {collapsed ? null : (
+      <>
       <div className="panel-scroll min-w-0 overflow-x-auto overscroll-x-contain">
         <div className="flex w-max min-w-full gap-2 px-4 py-3 pe-6">
         {days.map((day, index) => {
@@ -118,6 +134,8 @@ export function RouteCardList({
           />
         ) : null}
       </div>
+      </>
+      )}
 
       {showAll ? (
         <AllDaysModal
@@ -129,6 +147,40 @@ export function RouteCardList({
           onClose={() => setShowAll(false)}
         />
       ) : null}
+    </div>
+  );
+}
+
+function ResultsToolbar({
+  summary,
+  collapsed,
+  onToggleCollapsed,
+  extra,
+}: {
+  summary: string;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  extra?: ReactNode;
+}) {
+  return (
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold tracking-wide text-slate-500">동선 결과</p>
+        <p className="truncate text-sm font-semibold text-slate-900">{summary}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {extra}
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "동선 결과 펼치기" : "동선 결과 접기"}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+        >
+          {collapsed ? <ChevronsUp className="h-4 w-4" /> : <ChevronsDown className="h-4 w-4" />}
+          {collapsed ? "펼치기" : "접기"}
+        </button>
+      </div>
     </div>
   );
 }

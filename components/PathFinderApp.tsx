@@ -73,6 +73,7 @@ export function PathFinderApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [plan, setPlan] = useState<RoutePlan | null>(null);
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
+  const [resultsCollapsed, setResultsCollapsed] = useState(false);
   const [settings, setSettings] = useState<TripSettings>(createDefaultSettings);
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string>();
@@ -331,6 +332,7 @@ export function PathFinderApp() {
     setIsImporting(false);
     setImportMessage(undefined);
     setUnmatched([]);
+    setResultsCollapsed(false);
   };
 
   return (
@@ -388,7 +390,13 @@ export function PathFinderApp() {
             returnPoint={resolvedReturnPoint(settings)}
           />
         </section>
-        <section className="flex h-[42vh] min-h-[320px] max-h-[460px] min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50">
+        <section
+          className={`flex min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50 ${
+            resultsCollapsed
+              ? "h-auto shrink-0"
+              : "h-[42vh] min-h-[320px] max-h-[460px]"
+          }`}
+        >
           <RouteCardList
             days={plan?.days ?? []}
             unassigned={plan?.unassigned ?? []}
@@ -396,6 +404,8 @@ export function PathFinderApp() {
             onSelectDay={setActiveDayId}
             startPoint={settings.startPoint}
             returnPoint={resolvedReturnPoint(settings)}
+            collapsed={resultsCollapsed}
+            onToggleCollapsed={() => setResultsCollapsed((current) => !current)}
           />
         </section>
       </main>
