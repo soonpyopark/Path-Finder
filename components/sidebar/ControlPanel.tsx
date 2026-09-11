@@ -459,7 +459,7 @@ export function ControlPanel({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-white/10 px-2 py-3 text-xs font-semibold text-white transition hover:bg-white/20 sm:text-sm"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-rose-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-rose-400 sm:text-sm"
         >
           <RotateCcw className="h-4 w-4 shrink-0" />
           <span className="truncate">초기화</span>
