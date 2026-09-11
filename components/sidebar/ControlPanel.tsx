@@ -121,7 +121,14 @@ export function ControlPanel({
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <p className="text-xs font-semibold tracking-wide text-[var(--panel-brand)]">Path Finder v1.0.1</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              title="새로고침"
+              className="truncate text-xs font-semibold tracking-wide text-[var(--panel-brand)] transition hover:text-white"
+            >
+              Path Finder v1.0.1
+            </button>
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
