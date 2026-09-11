@@ -25,8 +25,8 @@ export const KOREA_CENTER: MapCenter = {
 };
 
 export const DAEGU_CENTER: MapCenter = {
-  lat: 35.8714354,
-  lng: 128.601445,
+  lat: 35.858493,
+  lng: 128.615078,
 };
 
 export const EDUCATION_OFFICES: EducationOffice[] = [
@@ -102,7 +102,7 @@ export const EDUCATION_OFFICES: EducationOffice[] = [
     name: "대구광역시",
     shortName: "대구",
     center: DAEGU_CENTER,
-    mapLevel: 8,
+    mapLevel: 3,
     districts: ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군", "군위군"],
   },
   {
