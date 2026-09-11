@@ -114,11 +114,11 @@ export function ControlPanel({
   return (
     <aside
       data-theme={panelTheme}
-      className="sidebar-panel flex h-full w-full flex-col text-slate-100 lg:w-[380px] lg:min-w-[380px]"
+      className="sidebar-panel flex h-full w-full shrink-0 flex-col text-slate-100 lg:w-[380px] lg:min-w-[380px]"
     >
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-[0.2em] text-[var(--panel-brand)]">PATH FINDER 1.0.0</p>
+          <p className="text-xs font-semibold tracking-wide text-[var(--panel-brand)]">Path Finder v1.0.1</p>
           <div className="flex shrink-0 items-center gap-1.5" role="radiogroup" aria-label="왼쪽 화면 색상">
             {PANEL_THEMES.map((theme) => {
               const selectedTheme = theme.id === panelTheme;
@@ -140,7 +140,7 @@ export function ControlPanel({
             })}
           </div>
         </div>
-        <h1 className="mt-1 text-xl font-bold text-yellow-300">출장·배달 동선을 알려줘</h1>
+        <h1 className="mt-1 text-xl font-bold tracking-tighter text-yellow-300">출장·배달 최적의 동선을 알려줘</h1>
         <p className="mt-2 text-sm text-slate-300">
           학교·교육청 기관뿐 아니라 상호나 도로명 주소로도 방문지를 넣을 수 있습니다.
         </p>
@@ -225,7 +225,7 @@ export function ControlPanel({
               className="inline-flex items-center gap-1 rounded-md bg-sky-200/90 px-2.5 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
-              템플릿
+              템플릿 다운로드
             </button>
             <button
               type="button"
@@ -389,19 +389,31 @@ export function ControlPanel({
             <CalendarRange className="h-4 w-4" />
             출장 설정
           </p>
-          <label className="block text-xs text-slate-400">
-            일 최대 방문 가능 기관(학교) 수
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={settings.visitsPerDay}
-              onChange={(event) =>
-                onSettingsChange({ visitsPerDay: Number(event.target.value) || 1 })
-              }
-              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
-            />
-          </label>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+            <label className="block min-w-0 text-xs text-slate-400">
+              일 최대 방문 가능 기관(학교) 수
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={settings.visitsPerDay}
+                onChange={(event) =>
+                  onSettingsChange({ visitsPerDay: Number(event.target.value) || 1 })
+                }
+                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => onSettingsChange({ includeWeekends: !settings.includeWeekends })}
+              aria-pressed={settings.includeWeekends}
+              className={`inline-flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-3 text-sm ${
+                settings.includeWeekends ? "bg-emerald-500/20 text-emerald-200" : "bg-black/20 text-slate-300"
+              }`}
+            >
+              {settings.includeWeekends ? "주말 포함" : "주말 제외"}
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <label className="block text-xs text-slate-400">
               시작일
@@ -422,15 +434,6 @@ export function ControlPanel({
               />
             </label>
           </div>
-          <button
-            type="button"
-            onClick={() => onSettingsChange({ includeWeekends: !settings.includeWeekends })}
-            className={`flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm ${
-              settings.includeWeekends ? "bg-emerald-500/20 text-emerald-200" : "bg-black/20 text-slate-300"
-            }`}
-          >
-            {settings.includeWeekends ? "주말 포함" : "주말 제외"}
-          </button>
         </section>
       </div>
 

@@ -36,8 +36,8 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-slate-50">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-slate-50">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
         <div>
           <p className="text-xs font-semibold tracking-wide text-slate-500">동선 결과</p>
           <p className="text-sm font-semibold text-slate-900">{summary}</p>
@@ -53,7 +53,8 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
         ) : null}
       </div>
 
-      <div className="panel-scroll flex gap-2 overflow-x-auto px-4 py-3">
+      <div className="panel-scroll min-w-0 overflow-x-auto overscroll-x-contain">
+        <div className="flex w-max min-w-full gap-2 px-4 py-3 pe-6">
         {days.map((day, index) => {
           const color = DAY_COLORS[index % DAY_COLORS.length];
           const active = !showingUnassigned && day.id === (activeDay?.id ?? "");
@@ -62,12 +63,12 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
               key={day.id}
               type="button"
               onClick={() => onSelectDay(day.id)}
-              className={`min-w-[148px] shrink-0 rounded-xl border px-3 py-2.5 text-left transition ${
+              className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${
                 active ? "border-emerald-500 bg-white ring-2 ring-emerald-100" : "border-slate-200 bg-white hover:border-slate-300"
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-slate-900">
+                <span className="whitespace-nowrap text-sm font-semibold text-slate-900">
                   {day.dayLabel} ({day.weekday})
                 </span>
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
@@ -82,7 +83,7 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
           <button
             type="button"
             onClick={() => onSelectDay("unassigned")}
-            className={`min-w-[148px] shrink-0 rounded-xl border px-3 py-2.5 text-left ${
+            className={`shrink-0 rounded-xl border px-3 py-2 text-left ${
               showingUnassigned
                 ? "border-amber-400 bg-amber-50 ring-2 ring-amber-100"
                 : "border-amber-200 bg-amber-50 hover:border-amber-300"
@@ -92,9 +93,10 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
             <p className="mt-1 text-xs text-amber-700">{unassigned.length}곳</p>
           </button>
         ) : null}
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-4">
         {showingUnassigned ? (
           <UnassignedDetail items={unassigned} />
         ) : activeDay ? (
@@ -116,15 +118,15 @@ export function RouteCardList({ days, unassigned, activeDayId, onSelectDay }: Ro
 
 function DayDetail({ day, color }: { day: DailyRoute; color: string }) {
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900">
             {day.dayLabel} ({day.weekday})
           </p>
           <p className="text-xs text-slate-500">{day.date}</p>
         </div>
-        <p className="text-sm font-semibold text-slate-700">
+        <p className="shrink-0 text-sm font-semibold text-slate-700">
           {day.stops.length}곳 · {day.totalDistanceKm.toFixed(1)} km
         </p>
       </div>

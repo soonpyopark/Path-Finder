@@ -343,8 +343,8 @@ export function PathFinderApp() {
         onReset={resetAll}
       />
 
-      <main className="flex min-h-[70vh] flex-1 flex-col bg-[#eef3f8] lg:min-h-0">
-        <section className="relative min-h-[360px] flex-1">
+      <main className="flex min-h-[70vh] min-w-0 flex-1 flex-col overflow-hidden bg-[#eef3f8] lg:min-h-0">
+        <section className="relative min-h-[360px] min-w-0 flex-1">
           <KakaoMapDynamic
             office={office}
             selected={selected}
@@ -352,7 +352,7 @@ export function PathFinderApp() {
             activeDayId={activeDayId}
           />
         </section>
-        <section className="flex h-[42vh] min-h-[320px] max-h-[460px] flex-col border-t border-slate-200 bg-slate-50">
+        <section className="flex h-[42vh] min-h-[320px] max-h-[460px] min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50">
           <RouteCardList
             days={plan?.days ?? []}
             unassigned={plan?.unassigned ?? []}
