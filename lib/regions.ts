@@ -25,8 +25,8 @@ export const KOREA_CENTER: MapCenter = {
 };
 
 export const DAEGU_CENTER: MapCenter = {
-  lat: 35.858493,
-  lng: 128.615078,
+  lat: 35.858352,
+  lng: 128.61484,
 };
 
 export const EDUCATION_OFFICES: EducationOffice[] = [

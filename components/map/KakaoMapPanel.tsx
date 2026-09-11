@@ -82,7 +82,7 @@ function KakaoMapInner({
       })}
 
       {selectedPins.map((item) => (
-        <CustomOverlayMap key={`sel-${item.id}`} position={{ lat: item.lat, lng: item.lng }}>
+        <CustomOverlayMap key={`sel-${item.id}`} position={{ lat: item.lat, lng: item.lng }} xAnchor={0.5} yAnchor={1.35}>
           <div className="rounded-full bg-slate-800 px-2 py-1 text-[10px] font-medium text-white shadow">
             {item.name}
           </div>
@@ -95,6 +95,8 @@ function KakaoMapInner({
           <CustomOverlayMap
             key={`stop-${stop.institution.id}`}
             position={{ lat: stop.institution.lat, lng: stop.institution.lng }}
+            xAnchor={0.5}
+            yAnchor={0.5}
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-slate-950 shadow">
               {stop.order}
