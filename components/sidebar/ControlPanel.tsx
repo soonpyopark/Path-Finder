@@ -140,7 +140,7 @@ export function ControlPanel({
             })}
           </div>
         </div>
-        <h1 className="mt-1 text-xl font-bold">출장.배달 동선을 알려줘</h1>
+        <h1 className="mt-1 text-xl font-bold text-yellow-300">출장·배달 동선을 알려줘</h1>
         <p className="mt-2 text-sm text-slate-300">
           학교·교육청 기관뿐 아니라 상호나 도로명 주소로도 방문지를 넣을 수 있습니다.
         </p>
@@ -193,7 +193,7 @@ export function ControlPanel({
                 onClick={allResultsSelected ? onDeselectResults : onSelectAllResults}
                 className="text-xs text-emerald-300 hover:text-emerald-200"
               >
-                {allResultsSelected ? "결과에서 해제" : "방문지로 추가"}
+                {allResultsSelected ? "결과에서 해제" : "검색 결과 모두 선택"}
               </button>
             ) : null}
           </div>
@@ -222,7 +222,7 @@ export function ControlPanel({
             <button
               type="button"
               onClick={onDownloadTemplate}
-              className="inline-flex items-center gap-1 rounded-md bg-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-sky-300"
+              className="inline-flex items-center gap-1 rounded-md bg-sky-200/90 px-2.5 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
               템플릿
@@ -231,7 +231,7 @@ export function ControlPanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
-              className="inline-flex items-center gap-1 rounded-md bg-rose-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-rose-300 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md bg-rose-200/90 px-2.5 py-1.5 text-[11px] font-semibold text-rose-950 hover:bg-rose-100 disabled:opacity-50"
             >
               <Upload className="h-3.5 w-3.5" />
               {isImporting ? "가져오는 중" : "엑셀 가져오기"}
@@ -239,8 +239,8 @@ export function ControlPanel({
             <button
               type="button"
               onClick={() => setPasteOpen((open) => !open)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 ${
-                pasteOpen ? "bg-sky-200" : "bg-sky-400 hover:bg-sky-300"
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-yellow-950 ${
+                pasteOpen ? "bg-yellow-100" : "bg-yellow-200/90 hover:bg-yellow-100"
               }`}
             >
               <ClipboardPaste className="h-3.5 w-3.5" />
@@ -287,7 +287,9 @@ export function ControlPanel({
             {isSearching ? (
               <p className="px-2 py-3 text-sm text-slate-400">검색 중...</p>
             ) : results.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-slate-400">검색 결과가 없습니다.</p>
+              <p className="px-2 py-3 text-sm text-slate-400">
+                {query.trim() ? "검색 결과가 없습니다." : "학교·기관명이나 주소를 검색하세요."}
+              </p>
             ) : (
               results.map((item) => {
                 const checked = selectedIds.has(item.id);
@@ -477,8 +479,10 @@ function DistrictChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-2.5 py-1 text-xs ${
-        active ? "bg-emerald-500 text-slate-950" : "bg-white/5 text-slate-300 hover:bg-white/10"
+      className={`rounded-full border px-2.5 py-1.5 text-xs font-semibold ${
+        active
+          ? "border-emerald-300 bg-emerald-500 text-slate-950"
+          : "border-emerald-300/50 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/30"
       }`}
     >
       {label}

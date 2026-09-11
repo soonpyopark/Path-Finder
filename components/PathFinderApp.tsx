@@ -5,6 +5,7 @@ import { KakaoMapDynamic } from "@/components/map/KakaoMapDynamic";
 import { RouteCardList } from "@/components/routes/RouteCardList";
 import { ControlPanel } from "@/components/sidebar/ControlPanel";
 import { DUMMY_INSTITUTIONS, searchDummyInstitutions } from "@/lib/dummy-schools";
+import { DAEGU_OFFICE_SEARCH_SHORTCUTS } from "@/lib/daegu-direct-institutions";
 import { ensureCoordinates } from "@/lib/geocode";
 import { searchKakaoPlaces } from "@/lib/kakao-places";
 import { exportRoutePlanToExcel } from "@/lib/export-excel";
@@ -60,9 +61,7 @@ export function PathFinderApp() {
   const [officeCode, setOfficeCode] = useState(DEFAULT_OFFICE_CODE);
   const [district, setDistrict] = useState("all");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Institution[]>(() =>
-    searchDummyInstitutions("", DEFAULT_OFFICE_CODE, "all"),
-  );
+  const [results, setResults] = useState<Institution[]>([]);
   const [selected, setSelected] = useState<Institution[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string>();
@@ -90,15 +89,34 @@ export function PathFinderApp() {
   }, [selected.length, settings.startDate, settings.endDate, settings.includeWeekends]);
 
   const runSearch = useCallback(async (nextQuery: string, nextOffice: string, nextDistrict: string) => {
-    const dummy = searchDummyInstitutions(nextQuery, nextOffice, nextDistrict);
-    setResults(dummy);
-
     const keyword = nextQuery.trim();
-    if (keyword.length < 2) {
+    const isShortcut = DAEGU_OFFICE_SEARCH_SHORTCUTS.includes(
+      keyword as (typeof DAEGU_OFFICE_SEARCH_SHORTCUTS)[number],
+    );
+
+    if (!keyword) {
+      setResults([]);
       setSearchMessage(undefined);
       setIsSearching(false);
       return;
     }
+
+    if (isShortcut) {
+      setResults(searchDummyInstitutions(keyword, nextOffice, nextDistrict));
+      setSearchMessage(undefined);
+      setIsSearching(false);
+      return;
+    }
+
+    if (keyword.length < 2) {
+      setResults([]);
+      setSearchMessage(undefined);
+      setIsSearching(false);
+      return;
+    }
+
+    const dummy = searchDummyInstitutions(keyword, nextOffice, nextDistrict);
+    setResults(dummy);
 
     setIsSearching(true);
     const officeCenter = getEducationOffice(nextOffice).center;
@@ -275,7 +293,7 @@ export function PathFinderApp() {
     setPlan(null);
     setActiveDayId(null);
     setSettings(createDefaultSettings());
-    setResults(searchDummyInstitutions("", DEFAULT_OFFICE_CODE, "all"));
+    setResults([]);
     setIsImporting(false);
     setImportMessage(undefined);
     setUnmatched([]);

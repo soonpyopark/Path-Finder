@@ -2,250 +2,12 @@ import { DAEGU_DIRECT_INSTITUTIONS } from "@/lib/daegu-direct-institutions";
 import { DEFAULT_OFFICE_CODE, matchesSelectedOffice } from "@/lib/regions";
 import type { Institution } from "@/lib/types";
 
+const CITY_HQ_KEYWORDS = ["본청", "시교육청"];
+const PROVINCE_HQ_KEYWORDS = ["본청", "도교육청"];
+const HQ_QUERIES = new Set(["본청", "시교육청", "도교육청"]);
+
 export const DUMMY_INSTITUTIONS: Institution[] = [
   ...DAEGU_DIRECT_INSTITUTIONS,
-  {
-    id: "dummy-knu",
-    name: "경북대학교",
-    type: "school",
-    address: "대구광역시 북구 대학로 80",
-    district: "북구",
-    officeCode: "D10",
-    lat: 35.89066,
-    lng: 128.61199,
-    source: "dummy",
-  },
-  {
-    id: "dummy-daeryun",
-    name: "대륜고등학교",
-    type: "school",
-    address: "대구광역시 수성구 달구벌대로496길 50",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.85841,
-    lng: 128.63812,
-    source: "dummy",
-  },
-  {
-    id: "dummy-daegu-hs",
-    name: "대구고등학교",
-    type: "school",
-    address: "대구광역시 수성구 희망로36길 47",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.83855,
-    lng: 128.61842,
-    source: "dummy",
-  },
-  {
-    id: "dummy-kyungshin",
-    name: "경신고등학교",
-    type: "school",
-    address: "대구광역시 수성구 청수로69길 21",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.84112,
-    lng: 128.63488,
-    source: "dummy",
-  },
-  {
-    id: "dummy-ohsung",
-    name: "오성고등학교",
-    type: "school",
-    address: "대구광역시 달서구 학산로 130",
-    district: "달서구",
-    officeCode: "D10",
-    lat: 35.85102,
-    lng: 128.55741,
-    source: "dummy",
-  },
-  {
-    id: "dummy-chunggu",
-    name: "청구고등학교",
-    type: "school",
-    address: "대구광역시 동구 효동로2길 24",
-    district: "동구",
-    officeCode: "D10",
-    lat: 35.88235,
-    lng: 128.65021,
-    source: "dummy",
-  },
-  {
-    id: "dummy-neungin",
-    name: "능인고등학교",
-    type: "school",
-    address: "대구광역시 수성구 명덕로 417",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.84528,
-    lng: 128.61573,
-    source: "dummy",
-  },
-  {
-    id: "dummy-dfhs",
-    name: "대구외국어고등학교",
-    type: "school",
-    address: "대구광역시 수성구 청호로 76",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.84691,
-    lng: 128.63955,
-    source: "dummy",
-  },
-  {
-    id: "dummy-dshs",
-    name: "대구일과학고등학교",
-    type: "school",
-    address: "대구광역시 수성구 동대구로54길 29",
-    district: "수성구",
-    officeCode: "D10",
-    lat: 35.85888,
-    lng: 128.63142,
-    source: "dummy",
-  },
-  {
-    id: "dummy-kmu",
-    name: "계명대학교",
-    type: "school",
-    address: "대구광역시 달서구 달구벌대로 1095",
-    district: "달서구",
-    officeCode: "D10",
-    lat: 35.85721,
-    lng: 128.48735,
-    source: "dummy",
-  },
-  {
-    id: "dummy-yeungjin",
-    name: "영진전문대학교",
-    type: "school",
-    address: "대구광역시 북구 복현로 35",
-    district: "북구",
-    officeCode: "D10",
-    lat: 35.89642,
-    lng: 128.61518,
-    source: "dummy",
-  },
-  {
-    id: "dummy-daegu-girls",
-    name: "대구여자고등학교",
-    type: "school",
-    address: "대구광역시 중구 명덕로 130",
-    district: "중구",
-    officeCode: "D10",
-    lat: 35.86012,
-    lng: 128.59044,
-    source: "dummy",
-  },
-  {
-    id: "dummy-gyeongsan-ms",
-    name: "경상중학교",
-    type: "school",
-    address: "대구광역시 중구 달구벌대로 2120",
-    district: "중구",
-    officeCode: "D10",
-    lat: 35.86635,
-    lng: 128.59891,
-    source: "dummy",
-  },
-  {
-    id: "dummy-seodaegu-es",
-    name: "서대구초등학교",
-    type: "school",
-    address: "대구광역시 서구 국채보상로34길 32",
-    district: "서구",
-    officeCode: "D10",
-    lat: 35.87188,
-    lng: 128.55962,
-    source: "dummy",
-  },
-  {
-    id: "dummy-namsan-es",
-    name: "남산초등학교",
-    type: "school",
-    address: "대구광역시 중구 남산로 61",
-    district: "중구",
-    officeCode: "D10",
-    lat: 35.85944,
-    lng: 128.58721,
-    source: "dummy",
-  },
-  {
-    id: "dummy-ansim-ms",
-    name: "안심중학교",
-    type: "school",
-    address: "대구광역시 동구 안심로49길 18",
-    district: "동구",
-    officeCode: "D10",
-    lat: 35.87112,
-    lng: 128.71844,
-    source: "dummy",
-  },
-  {
-    id: "dummy-chilgok-ms",
-    name: "칠곡중학교",
-    type: "school",
-    address: "대구광역시 북구 동암로 12",
-    district: "북구",
-    officeCode: "D10",
-    lat: 35.94218,
-    lng: 128.55833,
-    source: "dummy",
-  },
-  {
-    id: "dummy-sungseo-hs",
-    name: "성서고등학교",
-    type: "school",
-    address: "대구광역시 달서구 학산로 157",
-    district: "달서구",
-    officeCode: "D10",
-    lat: 35.84966,
-    lng: 128.55102,
-    source: "dummy",
-  },
-  {
-    id: "dummy-hwawon-hs",
-    name: "화원고등학교",
-    type: "school",
-    address: "대구광역시 달성군 화원읍 비슬로 2584",
-    district: "달성군",
-    officeCode: "D10",
-    lat: 35.80421,
-    lng: 128.50018,
-    source: "dummy",
-  },
-  {
-    id: "dummy-gunwi-hs",
-    name: "군위고등학교",
-    type: "school",
-    address: "대구광역시 군위군 군위읍 군청로 138",
-    district: "군위군",
-    officeCode: "D10",
-    lat: 36.24288,
-    lng: 128.57264,
-    source: "dummy",
-  },
-  {
-    id: "dummy-yeongnam",
-    name: "영남이공대학교",
-    type: "school",
-    address: "대구광역시 남구 현충로 170",
-    district: "남구",
-    officeCode: "D10",
-    lat: 35.84566,
-    lng: 128.59312,
-    source: "dummy",
-  },
-  {
-    id: "dummy-daegu-tech-hs",
-    name: "대구공업고등학교",
-    type: "school",
-    address: "대구광역시 남구 현충로 21",
-    district: "남구",
-    officeCode: "D10",
-    lat: 35.84688,
-    lng: 128.58041,
-    source: "dummy",
-  },
   {
     id: "dummy-seoul-office",
     name: "서울특별시교육청",
@@ -256,17 +18,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 37.5729,
     lng: 126.9618,
     source: "dummy",
-  },
-  {
-    id: "dummy-seoul-hs",
-    name: "서울고등학교",
-    type: "school",
-    address: "서울특별시 서초구 효령로 197",
-    district: "서초구",
-    officeCode: "B10",
-    lat: 37.4838,
-    lng: 127.0056,
-    source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-busan-office",
@@ -278,6 +30,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.176,
     lng: 129.075,
     source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-incheon-office",
@@ -289,6 +42,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 37.4485,
     lng: 126.7313,
     source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-gwangju-office",
@@ -300,7 +54,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.1522,
     lng: 126.8513,
     source: "dummy",
-    keywords: ["광주교육청", "광주광역시교육청", "전남광주", "통합교육청"],
+    keywords: ["광주교육청", "광주광역시교육청", "전남광주", "통합교육청", ...CITY_HQ_KEYWORDS],
   },
   {
     id: "dummy-daejeon-office",
@@ -312,6 +66,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 36.3575,
     lng: 127.3812,
     source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-ulsan-office",
@@ -323,6 +78,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.5388,
     lng: 129.3301,
     source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-sejong-office",
@@ -334,6 +90,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 36.4796,
     lng: 127.2892,
     source: "dummy",
+    keywords: CITY_HQ_KEYWORDS,
   },
   {
     id: "dummy-gyeonggi-office",
@@ -345,6 +102,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 37.2749,
     lng: 127.0095,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-gangwon-office",
@@ -356,6 +114,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 37.8813,
     lng: 127.73,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-chungbuk-office",
@@ -367,6 +126,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 36.6424,
     lng: 127.489,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-chungnam-office",
@@ -378,6 +138,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 36.659,
     lng: 126.673,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-jeonbuk-office",
@@ -389,6 +150,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.821,
     lng: 127.1089,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-jeonnam-office",
@@ -400,7 +162,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 34.8161,
     lng: 126.4629,
     source: "dummy",
-    keywords: ["전남교육청", "전라남도교육청", "전남광주", "통합교육청"],
+    keywords: ["전남교육청", "전라남도교육청", "전남광주", "통합교육청", ...PROVINCE_HQ_KEYWORDS],
   },
   {
     id: "dummy-gyeongbuk-office",
@@ -412,6 +174,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 36.5684,
     lng: 128.7294,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-gyeongnam-office",
@@ -423,6 +186,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.2272,
     lng: 128.6811,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
   {
     id: "dummy-jeju-office",
@@ -434,8 +198,43 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 33.489,
     lng: 126.4983,
     source: "dummy",
+    keywords: PROVINCE_HQ_KEYWORDS,
   },
 ];
+
+function institutionListRank(item: Institution): number {
+  const keywords = item.keywords ?? [];
+  const name = item.name;
+  if (name.includes("지원청") || keywords.includes("지원청")) return 1;
+  if (name.includes("도서관") || keywords.includes("도서관")) return 3;
+  if (name.includes("수련원") || keywords.includes("수련원")) return 4;
+  if (item.id === "dge-hq" || (name.includes("교육청") && !name.includes("지원청"))) return 0;
+  return 2;
+}
+
+function matchesHeadquartersQuery(item: Institution, query: string): boolean {
+  const keywords = item.keywords ?? [];
+  const name = item.name;
+  if (name.includes("지원청")) return false;
+
+  const isHq =
+    keywords.includes("본청") ||
+    name.includes("시교육청") ||
+    name.includes("도교육청") ||
+    name.includes("특별시교육청") ||
+    name.includes("자치시교육청") ||
+    name.includes("자치도교육청");
+  if (!isHq) return false;
+
+  if (query === "본청") return true;
+  if (query === "시교육청") {
+    return keywords.includes("시교육청") || name.includes("시교육청") || name.includes("특별시교육청");
+  }
+  if (query === "도교육청") {
+    return keywords.includes("도교육청") || name.includes("도교육청") || name.includes("자치도교육청");
+  }
+  return false;
+}
 
 export function searchDummyInstitutions(
   query: string,
@@ -444,26 +243,32 @@ export function searchDummyInstitutions(
 ): Institution[] {
   const normalized = query.trim().toLowerCase();
 
-  return DUMMY_INSTITUTIONS.filter((item) => {
-    const matchesOffice = matchesSelectedOffice(item.officeCode, officeCode);
-    const matchesDistrict = !district || district === "all" || item.district === district;
-    if (!matchesOffice || !matchesDistrict) return false;
-    if (!normalized) return true;
+  return DUMMY_INSTITUTIONS.map((item, index) => ({ item, index }))
+    .filter(({ item }) => {
+      if (HQ_QUERIES.has(normalized)) {
+        return matchesHeadquartersQuery(item, normalized);
+      }
 
-    const haystack = [
-      item.name,
-      item.address,
-      item.district,
-      ...(item.keywords ?? []),
-    ]
-      .join(" ")
-      .toLowerCase();
+      const matchesOffice = matchesSelectedOffice(item.officeCode, officeCode);
+      const matchesDistrict = !district || district === "all" || item.district === district;
+      if (!matchesOffice || !matchesDistrict) return false;
+      if (!normalized) return true;
 
-    return haystack.includes(normalized);
-  }).sort((a, b) => {
-    if (a.type === b.type) return a.name.localeCompare(b.name, "ko");
-    if (a.type === "office") return -1;
-    if (b.type === "office") return 1;
-    return a.name.localeCompare(b.name, "ko");
-  });
+      const haystack = [
+        item.name,
+        item.address,
+        item.district,
+        ...(item.keywords ?? []),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalized);
+    })
+    .sort((left, right) => {
+      const rankDiff = institutionListRank(left.item) - institutionListRank(right.item);
+      if (rankDiff !== 0) return rankDiff;
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
 }
