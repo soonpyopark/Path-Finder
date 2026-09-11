@@ -94,3 +94,12 @@ body {
 .panel-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

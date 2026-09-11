@@ -1,7 +1,7 @@
 "use client";
 
-import { type ReactNode, useMemo, useState } from "react";
-import { ChevronsDown, ChevronsUp, MapPin, Route, X } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronsDown, ChevronsUp, MapPin, Route, Triangle, X } from "lucide-react";
 import { DAY_COLORS, hasCoordinates, type DailyRoute, type Institution, type TripWaypoint } from "@/lib/types";
 import { waypointsEqual } from "@/lib/waypoints";
 
@@ -77,8 +77,8 @@ export function RouteCardList({
         }
       />
 
-      <div className="panel-scroll min-w-0 shrink-0 overflow-x-auto overscroll-x-contain">
-        <div className="flex w-max min-w-full gap-2 px-4 py-3 pe-6">
+      <DayTabStrip>
+        <div className="flex w-max min-w-full gap-2 px-1 py-3">
         {days.map((day, index) => {
           const color = DAY_COLORS[index % DAY_COLORS.length];
           const active = !showingUnassigned && day.id === (activeDay?.id ?? "");
@@ -118,7 +118,7 @@ export function RouteCardList({
           </button>
         ) : null}
         </div>
-      </div>
+      </DayTabStrip>
 
       {collapsed ? null : (
         <div className="min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-4">
@@ -146,6 +146,88 @@ export function RouteCardList({
         />
       ) : null}
     </div>
+  );
+}
+
+function DayTabStrip({ children }: { children: ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const syncEdges = useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const max = node.scrollWidth - node.clientWidth;
+    setCanScrollLeft(node.scrollLeft > 1);
+    setCanScrollRight(node.scrollLeft < max - 1);
+  }, []);
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return undefined;
+    syncEdges();
+    const observer = new ResizeObserver(syncEdges);
+    observer.observe(node);
+    if (node.firstElementChild) observer.observe(node.firstElementChild);
+    return () => observer.disconnect();
+  }, [syncEdges]);
+
+  const scrollByPage = (direction: -1 | 1) => {
+    const node = scrollRef.current;
+    if (!node) return;
+    node.scrollBy({ left: direction * node.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  const scrollable = canScrollLeft || canScrollRight;
+
+  return (
+    <div className="flex min-w-0 shrink-0 items-center gap-1 px-2">
+      {scrollable ? (
+        <StripArrow
+          direction="left"
+          disabled={!canScrollLeft}
+          onClick={() => scrollByPage(-1)}
+        />
+      ) : null}
+      <div
+        ref={scrollRef}
+        onScroll={syncEdges}
+        className="hide-scrollbar min-w-0 flex-1 overflow-x-auto overscroll-x-contain"
+      >
+        {children}
+      </div>
+      {scrollable ? (
+        <StripArrow
+          direction="right"
+          disabled={!canScrollRight}
+          onClick={() => scrollByPage(1)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function StripArrow({
+  direction,
+  disabled,
+  onClick,
+}: {
+  direction: "left" | "right";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={direction === "left" ? "이전 날짜 보기" : "다음 날짜 보기"}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white"
+    >
+      <Triangle
+        className={`h-3 w-3 fill-current ${direction === "left" ? "-rotate-90" : "rotate-90"}`}
+      />
+    </button>
   );
 }
 

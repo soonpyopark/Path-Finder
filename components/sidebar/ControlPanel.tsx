@@ -98,6 +98,7 @@ export function ControlPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
   const [panelTheme, setPanelTheme] = useState<PanelThemeId>(DEFAULT_PANEL_THEME);
   const allResultsSelected =
     results.length > 0 && results.every((item) => selectedIds.has(item.id));
@@ -119,7 +120,16 @@ export function ControlPanel({
     >
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-wide text-[var(--panel-brand)]">Path Finder v1.0.1</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="text-xs font-semibold tracking-wide text-[var(--panel-brand)]">Path Finder v1.0.1</p>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="shrink-0 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-slate-100 transition hover:bg-white/20"
+            >
+              사용 방법
+            </button>
+          </div>
           <div className="flex shrink-0 items-center gap-1.5" role="radiogroup" aria-label="왼쪽 화면 색상">
             {PANEL_THEMES.map((theme) => {
               const selectedTheme = theme.id === panelTheme;
@@ -141,7 +151,7 @@ export function ControlPanel({
             })}
           </div>
         </div>
-        <h1 className="mt-1 text-xl font-bold tracking-tighter text-yellow-300">출장! 최적의 동선을 알려줘.</h1>
+        <h1 className="mt-1 text-xl font-bold tracking-tighter text-yellow-300">출장, 최적의 동선을 알려줘!</h1>
         <p className="mt-2 text-sm text-slate-300">
           학교·교육청 기관뿐 아니라 상호나 도로명 주소로도 방문지를 넣을 수 있습니다.
         </p>
@@ -219,33 +229,35 @@ export function ControlPanel({
               ))}
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-1.5">
+          {/* flex-auto grows each button from its label width by the same amount,
+              so the leftover space becomes identical padding on every button. */}
+          <div className="flex gap-1.5">
             <button
               type="button"
               onClick={onDownloadTemplate}
-              className="inline-flex items-center gap-1 rounded-md bg-sky-200/90 px-2.5 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100"
+              className="inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md bg-sky-200/90 px-2 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100"
             >
-              <FileSpreadsheet className="h-3.5 w-3.5" />
-              템플릿 다운로드
+              <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">템플릿 다운로드</span>
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
-              className="inline-flex items-center gap-1 rounded-md bg-rose-200/90 px-2.5 py-1.5 text-[11px] font-semibold text-rose-950 hover:bg-rose-100 disabled:opacity-50"
+              className="inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md bg-rose-200/90 px-2 py-1.5 text-[11px] font-semibold text-rose-950 hover:bg-rose-100 disabled:opacity-50"
             >
-              <Upload className="h-3.5 w-3.5" />
-              {isImporting ? "가져오는 중" : "엑셀 가져오기"}
+              <Upload className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{isImporting ? "가져오는 중" : "엑셀 가져오기"}</span>
             </button>
             <button
               type="button"
               onClick={() => setPasteOpen((open) => !open)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-yellow-950 ${
-                pasteOpen ? "bg-yellow-100" : "bg-yellow-200/90 hover:bg-yellow-100"
+              className={`inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold text-emerald-950 ${
+                pasteOpen ? "bg-emerald-100" : "bg-emerald-200/90 hover:bg-emerald-100"
               }`}
             >
-              <ClipboardPaste className="h-3.5 w-3.5" />
-              붙여넣기
+              <ClipboardPaste className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">붙여넣기</span>
             </button>
             <input
               ref={fileInputRef}
@@ -502,7 +514,100 @@ export function ControlPanel({
           <span className="truncate">초기화</span>
         </button>
       </div>
+
+      {helpOpen ? <HelpModal onClose={() => setHelpOpen(false)} /> : null}
     </aside>
+  );
+}
+
+const HELP_STEPS = [
+  {
+    title: "1. 지역과 시·군·구를 고릅니다",
+    body: "지역(교육청)을 바꾸면 지도와 검색 범위가 함께 옮겨갑니다. 시·군·구 칩을 누르면 그 자치구 안에서만 검색합니다.",
+  },
+  {
+    title: "2. 방문지를 담습니다",
+    body: "학교·기관명뿐 아니라 상호나 도로명 주소로도 찾을 수 있습니다. 검색 결과를 누르면 아래 선택 목록에 담기고, '검색 결과 모두 선택'으로 한 번에 담을 수도 있습니다.",
+  },
+  {
+    title: "3. 엑셀로 한꺼번에 넣습니다",
+    body: "'템플릿 다운로드'로 받은 양식에 방문지를 적어 '엑셀 가져오기'로 올리거나, 목록을 복사해 '붙여넣기'로 넣습니다. 찾지 못한 항목은 따로 알려 드립니다.",
+  },
+  {
+    title: "4. 출장 조건을 정합니다",
+    body: "출발지는 기본이 선택한 교육청이며 검색해서 바꿀 수 있습니다. 복귀지점이 다르면 '복귀지점 따로 지정'을 누르세요. 하루 최대 방문 수, 주말 포함 여부, 기간도 여기서 정합니다.",
+  },
+  {
+    title: "5. 동선을 만들고 확인합니다",
+    body: "'동선생성'을 누르면 출발지에서 시작해 복귀지점으로 끝나는 가장 짧은 순서로 날짜별 일정이 만들어집니다. 날짜 탭을 누르면 지도가 그날 동선으로 이동하고, '전체 보기'로 모든 날짜를 한눈에 볼 수 있습니다.",
+  },
+  {
+    title: "6. 결과를 저장합니다",
+    body: "'내보내기'로 요약과 날짜별 방문 순서를 엑셀로 받습니다. 처음부터 다시 하려면 '초기화'를 누르세요.",
+  },
+];
+
+function HelpModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-modal-title"
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white text-slate-800 shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <p className="text-xs font-semibold tracking-wide text-slate-500">사용 방법</p>
+            <p id="help-modal-title" className="text-base font-semibold text-slate-900">
+              출장 동선, 이렇게 만듭니다
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="panel-scroll space-y-4 overflow-y-auto px-5 py-4">
+          {HELP_STEPS.map((step) => (
+            <section key={step.title}>
+              <p className="text-sm font-semibold text-slate-900">{step.title}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{step.body}</p>
+            </section>
+          ))}
+          <p className="rounded-xl bg-slate-100 px-4 py-3 text-xs leading-5 text-slate-600">
+            이동 거리는 출발지 → 방문지 → 복귀지점을 직선으로 이은 값이라 실제 주행 거리와는 차이가 있습니다.
+            지도 아래 결과 패널은 ‘접기’로 숨겨 지도를 크게 볼 수 있습니다.
+          </p>
+        </div>
+        <div className="flex justify-end border-t border-slate-200 px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
