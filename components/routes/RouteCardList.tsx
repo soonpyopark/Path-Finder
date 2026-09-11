@@ -77,9 +77,7 @@ export function RouteCardList({
         }
       />
 
-      {collapsed ? null : (
-      <>
-      <div className="panel-scroll min-w-0 overflow-x-auto overscroll-x-contain">
+      <div className="panel-scroll min-w-0 shrink-0 overflow-x-auto overscroll-x-contain">
         <div className="flex w-max min-w-full gap-2 px-4 py-3 pe-6">
         {days.map((day, index) => {
           const color = DAY_COLORS[index % DAY_COLORS.length];
@@ -122,19 +120,19 @@ export function RouteCardList({
         </div>
       </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-4">
-        {showingUnassigned ? (
-          <UnassignedDetail items={unassigned} />
-        ) : activeDay ? (
-          <DayDetail
-            day={activeDay}
-            color={DAY_COLORS[days.findIndex((item) => item.id === activeDay.id) % DAY_COLORS.length]}
-            startPoint={startPoint}
-            returnPoint={returnPoint}
-          />
-        ) : null}
-      </div>
-      </>
+      {collapsed ? null : (
+        <div className="min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-4">
+          {showingUnassigned ? (
+            <UnassignedDetail items={unassigned} />
+          ) : activeDay ? (
+            <DayDetail
+              day={activeDay}
+              color={DAY_COLORS[days.findIndex((item) => item.id === activeDay.id) % DAY_COLORS.length]}
+              startPoint={startPoint}
+              returnPoint={returnPoint}
+            />
+          ) : null}
+        </div>
       )}
 
       {showAll ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CustomOverlayMap, Map, Polyline } from "react-kakao-maps-sdk";
 import { useKakaoLoader } from "react-kakao-maps-sdk";
 import { MapPinOff } from "lucide-react";
@@ -57,18 +57,47 @@ function KakaoMapInner({
     appkey,
     libraries: ["services"],
   });
-  const mapRef = useRef<{ relayout: () => void } | null>(null);
+  const [map, setMap] = useState<kakao.maps.Map | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
+
+  const activeDay = days.find((day) => day.id === activeDayId) ?? days[0];
+
+  const focusPoints = useMemo(() => {
+    const stops = activeDay?.stops.flatMap((stop) =>
+      hasCoordinates(stop.institution)
+        ? [{ lat: stop.institution.lat, lng: stop.institution.lng }]
+        : [],
+    );
+    if (!stops?.length) return [];
+    return [
+      { lat: startPoint.lat, lng: startPoint.lng },
+      ...stops,
+      { lat: returnPoint.lat, lng: returnPoint.lng },
+    ];
+  }, [activeDay, startPoint, returnPoint]);
+
+  const focusKey = focusPoints.map((point) => `${point.lat},${point.lng}`).join("|");
 
   useEffect(() => {
     const node = frameRef.current;
-    if (!node) return undefined;
+    if (!map || !node) return undefined;
     const observer = new ResizeObserver(() => {
-      mapRef.current?.relayout();
+      map.relayout();
     });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [loading, error]);
+  }, [map]);
+
+  useEffect(() => {
+    if (!map || focusPoints.length === 0) return;
+    const bounds = new kakao.maps.LatLngBounds();
+    focusPoints.forEach((point) => {
+      bounds.extend(new kakao.maps.LatLng(point.lat, point.lng));
+    });
+    map.setBounds(bounds, 48, 48, 48, 48);
+    // focusKey keeps this from refiring when the same coordinates arrive in a new array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, focusKey]);
 
   if (error) {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -84,7 +113,6 @@ function KakaoMapInner({
     return <MapPlaceholder message="지도를 불러오는 중입니다." />;
   }
 
-  const activeDay = days.find((day) => day.id === activeDayId) ?? days[0];
   const overlayStops = activeDay?.stops.filter((stop) => hasCoordinates(stop.institution)) ?? [];
   const selectedPins = selected.filter(hasCoordinates);
   const firstStop = overlayStops[0]?.institution;
@@ -115,9 +143,7 @@ function KakaoMapInner({
       isPanto
       level={office.mapLevel}
       className="h-full w-full"
-      onCreate={(map) => {
-        mapRef.current = map;
-      }}
+      onCreate={setMap}
     >
       {days.map((day, dayIndex) => {
         const path = day.stops.flatMap((stop) =>

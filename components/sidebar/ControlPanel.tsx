@@ -141,7 +141,7 @@ export function ControlPanel({
             })}
           </div>
         </div>
-        <h1 className="mt-1 text-xl font-bold tracking-tighter text-yellow-300">출장·배달 최적의 동선을 알려줘</h1>
+        <h1 className="mt-1 text-xl font-bold tracking-tighter text-yellow-300">출장! 최적의 동선을 알려줘.</h1>
         <p className="mt-2 text-sm text-slate-300">
           학교·교육청 기관뿐 아니라 상호나 도로명 주소로도 방문지를 넣을 수 있습니다.
         </p>
@@ -149,11 +149,11 @@ export function ControlPanel({
 
       <div className="panel-scroll flex-1 space-y-5 overflow-y-auto px-5 py-5">
         <section className="space-y-2">
-          <label className="text-xs font-semibold text-slate-300">지역 (교육청)</label>
+          <label className="block text-xs font-semibold leading-4 text-slate-300">지역 (교육청)</label>
           <select
             value={office.code}
             onChange={(event) => onOfficeChange(event.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none ring-emerald-400 focus:ring-2"
+            className="w-full rounded-lg border border-white/20 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-400 focus:ring-2"
           >
             {EDUCATION_OFFICES.map((item) => (
               <option key={item.code} value={item.code} className="text-slate-900">
@@ -199,12 +199,12 @@ export function ControlPanel({
             ) : null}
           </div>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-yellow-900/60" />
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               placeholder="학교·기관명, 상호 또는 도로명 주소"
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2"
+              className="w-full rounded-lg border border-yellow-200/60 bg-yellow-100 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none ring-emerald-400 placeholder:text-yellow-900/50 focus:ring-2"
             />
           </div>
           {office.code === "D10" ? (
@@ -284,7 +284,7 @@ export function ControlPanel({
           ) : null}
           {importMessage ? <p className="text-xs text-emerald-300">{importMessage}</p> : null}
           {searchMessage ? <p className="text-xs text-amber-300">{searchMessage}</p> : null}
-          <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-2">
+          <div className="panel-scroll max-h-64 space-y-1 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-2">
             {isSearching ? (
               <p className="px-2 py-3 text-sm text-slate-400">검색 중...</p>
             ) : results.length === 0 ? (
@@ -342,7 +342,7 @@ export function ControlPanel({
               </button>
             ) : null}
           </div>
-          <div className="max-h-36 space-y-1 overflow-y-auto">
+          <div className="panel-scroll max-h-36 space-y-1 overflow-y-auto">
             {selected.length === 0 ? (
               <p className="rounded-lg border border-dashed border-white/15 px-3 py-4 text-sm text-slate-400">
               검색 결과에서 방문할 곳을 선택하세요.
@@ -372,7 +372,7 @@ export function ControlPanel({
           {unmatched.length > 0 ? (
             <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
               <p className="text-xs font-semibold text-amber-200">찾지 못한 {unmatched.length}곳</p>
-              <ul className="mt-2 max-h-24 space-y-1 overflow-y-auto text-xs text-amber-100">
+              <ul className="panel-scroll mt-2 max-h-24 space-y-1 overflow-y-auto text-xs text-amber-100">
                 {unmatched.map((item) => (
                   <li key={`${item.name}-${item.district}-${item.address}`} className="truncate">
                     {item.name}

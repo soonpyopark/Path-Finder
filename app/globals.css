@@ -57,17 +57,40 @@ body {
   box-sizing: border-box;
 }
 
+/* Chrome ignores ::-webkit-scrollbar sizing when scrollbar-width is set, so the
+   standard properties are scoped to engines without the webkit pseudo-element. */
+@supports not selector(::-webkit-scrollbar) {
+  .panel-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+}
+
 .panel-scroll::-webkit-scrollbar {
-  width: 8px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 .panel-scroll::-webkit-scrollbar-track {
-  background: rgba(148, 163, 184, 0.16);
-  border-radius: 999px;
+  background: transparent;
 }
 
 .panel-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 999px;
+}
+
+.panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Chrome draws stepper buttons on Windows unless they are zeroed out. */
+.panel-scroll::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.panel-scroll::-webkit-scrollbar-corner {
+  background: transparent;
 }

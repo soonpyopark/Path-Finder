@@ -122,7 +122,7 @@ export function WaypointField({ label, value, office, onChange }: WaypointFieldP
           className="w-full rounded-lg border border-white/10 bg-[#0b1a2e] py-2 pl-8 pr-3 text-xs text-white outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2"
         />
         {open && query.trim().length >= 2 ? (
-          <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[#10233d] shadow-lg">
+          <div className="panel-scroll absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/10 bg-[#10233d] shadow-lg">
             {searching ? (
               <p className="px-3 py-2 text-xs text-slate-400">검색 중...</p>
             ) : results.length === 0 ? (
