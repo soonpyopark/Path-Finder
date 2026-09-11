@@ -36,10 +36,11 @@ function KakaoMapInner({
   });
 
   if (error) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     return (
       <MapPlaceholder
         message="카카오맵을 불러오지 못했습니다."
-        hint="카카오디벨로퍼스 → 앱 → 플랫폼 키 → JavaScript 키 → JavaScript SDK 도메인에 http://localhost:3000 을 등록하세요. REST API 키가 아닌 JavaScript 키를 쓰고, 카카오맵 사용 설정은 ON 이어야 합니다. 키를 바꾼 뒤에는 npm run dev:restart 가 필요합니다."
+        hint={`지금 주소는 ${origin} 입니다. 카카오디벨로퍼스 → 앱 → 플랫폼 키 → JavaScript 키 → JavaScript SDK 도메인에 이 주소를 그대로 등록하세요. Preview URL(…-xxxx.vercel.app)은 배포마다 바뀌므로 카카오가 막습니다. REST 키가 아닌 JavaScript 키를 쓰고, 카카오맵 사용 설정은 ON 이어야 합니다.`}
       />
     );
   }

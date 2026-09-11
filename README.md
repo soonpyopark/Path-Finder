@@ -2,7 +2,19 @@
 
 학교·기관 주소 기반 **배달/출장 동선 최적화** 웹 앱입니다.
 
+**Production:** [https://pathfinder-eight-pearl.vercel.app/](https://pathfinder-eight-pearl.vercel.app/)
+
 기본 지역은 **대구광역시**이며, 좌측 패널의 교육청 선택으로 전국에서 사용할 수 있습니다. 검색은 내장 더미 데이터와 나이스 개방 포털 API를 함께 쓰고, 선택된 방문지를 일자별로 나눠 카카오맵에 표시합니다.
+
+## 실행 화면
+
+시작 화면입니다. 왼쪽에서 지역·방문지를 고르고, 오른쪽 카카오맵에서 위치를 확인합니다.
+
+![시작 화면](docs/screenshots/home.png)
+
+동선을 생성한 화면입니다. 지도에 일자별 경로가 그려지고, 아래에 방문 순서가 카드로 나옵니다.
+
+![동선 결과](docs/screenshots/route.png)
 
 ## 로컬에서 실행하기
 
@@ -64,13 +76,18 @@ Windows PowerShell에서도 위 npm 스크립트를 그대로 사용하면 됩�
 | `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오 개발자 콘솔 JavaScript 키 |
 | `NEXT_PUBLIC_NEIS_API_KEY` | 나이스 교육정보 개방 포털 API 키 |
 
-카카오 개발자 콘솔 Web 플랫폼에 `http://localhost:3000`과 Vercel 도메인을 등록해야 지도가 표시됩니다.
+카카오 개발자 콘솔 **플랫폼 키 → JavaScript 키 → JavaScript SDK 도메인**에 아래 주소를 등록해야 지도가 표시됩니다.
+
+- `http://localhost:3000`
+- `https://pathfinder-eight-pearl.vercel.app`
 
 ## Vercel 배포
 
+Production URL: [https://pathfinder-eight-pearl.vercel.app/](https://pathfinder-eight-pearl.vercel.app/)
+
 1. GitHub 저장소를 Vercel에 연결합니다.
-2. Environment Variables에 위 두 키를 넣습니다.
-3. 카카오 콘솔 Web 도메인에 Vercel URL을 등록합니다.
+2. Environment Variables에 위 두 키를 넣습니다. (`NEXT_PUBLIC_*`는 빌드 시점에 들어가므로 키를 넣은 뒤 다시 배포합니다.)
+3. 카카오 콘솔 JavaScript SDK 도메인에 Production URL을 등록합니다. Preview URL(`…-xxxx.vercel.app`)은 배포마다 바뀌므로 카카오에 넣어도 다음 배포부터는 다시 막힙니다.
 
 ## 라이선스
 
