@@ -442,7 +442,7 @@ export function ControlPanel({
           type="button"
           onClick={onGenerate}
           disabled={isGenerating || selected.length === 0}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-emerald-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300 sm:text-sm"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-green-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-green-500/35 disabled:text-slate-200 sm:text-sm"
         >
           <Route className="h-4 w-4 shrink-0" />
           <span className="truncate">{isGenerating ? "생성 중" : "동선생성"}</span>
@@ -451,7 +451,7 @@ export function ControlPanel({
           type="button"
           onClick={onExport}
           disabled={!canExport}
-          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-sky-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300 sm:text-sm"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-blue-500 px-2 py-3 text-xs font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:bg-blue-500/35 disabled:text-slate-200 sm:text-sm"
         >
           <Download className="h-4 w-4 shrink-0" />
           <span className="truncate">내보내기</span>
