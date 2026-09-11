@@ -1,14 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
   CalendarRange,
+  ClipboardPaste,
+  Download,
+  FileSpreadsheet,
   MapPin,
+  RotateCcw,
   Route,
   School,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { DAEGU_OFFICE_SEARCH_SHORTCUTS } from "@/lib/daegu-direct-institutions";
@@ -18,6 +23,14 @@ import {
   type EducationOffice,
 } from "@/lib/regions";
 import type { Institution, TripSettings } from "@/lib/types";
+import type { UnmatchedVisit } from "@/lib/visit-excel";
+import {
+  DEFAULT_PANEL_THEME,
+  PANEL_THEMES,
+  PANEL_THEME_STORAGE_KEY,
+  isPanelThemeId,
+  type PanelThemeId,
+} from "@/lib/panel-themes";
 
 interface ControlPanelProps {
   office: EducationOffice;
@@ -28,6 +41,10 @@ interface ControlPanelProps {
   settings: TripSettings;
   isSearching: boolean;
   isGenerating: boolean;
+  canExport: boolean;
+  isImporting: boolean;
+  importMessage?: string;
+  unmatched: UnmatchedVisit[];
   searchMessage?: string;
   onOfficeChange: (code: string) => void;
   onDistrictChange: (district: string) => void;
@@ -35,8 +52,15 @@ interface ControlPanelProps {
   onToggleInstitution: (institution: Institution) => void;
   onRemoveInstitution: (id: string) => void;
   onClearSelected: () => void;
+  onSelectAllResults: () => void;
+  onDeselectResults: () => void;
+  onDownloadTemplate: () => void;
+  onImportFile: (file: File) => void;
+  onImportPaste: (text: string) => void;
   onSettingsChange: (patch: Partial<TripSettings>) => void;
   onGenerate: () => void;
+  onExport: () => void;
+  onReset: () => void;
 }
 
 export function ControlPanel({
@@ -48,6 +72,10 @@ export function ControlPanel({
   settings,
   isSearching,
   isGenerating,
+  canExport,
+  isImporting,
+  importMessage,
+  unmatched,
   searchMessage,
   onOfficeChange,
   onDistrictChange,
@@ -55,18 +83,66 @@ export function ControlPanel({
   onToggleInstitution,
   onRemoveInstitution,
   onClearSelected,
+  onSelectAllResults,
+  onDeselectResults,
+  onDownloadTemplate,
+  onImportFile,
+  onImportPaste,
   onSettingsChange,
   onGenerate,
+  onExport,
+  onReset,
 }: ControlPanelProps) {
   const selectedIds = useMemo(() => new Set(selected.map((item) => item.id)), [selected]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [panelTheme, setPanelTheme] = useState<PanelThemeId>(DEFAULT_PANEL_THEME);
+  const allResultsSelected =
+    results.length > 0 && results.every((item) => selectedIds.has(item.id));
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(PANEL_THEME_STORAGE_KEY);
+    if (isPanelThemeId(stored)) setPanelTheme(stored);
+  }, []);
+
+  const selectPanelTheme = (id: PanelThemeId) => {
+    setPanelTheme(id);
+    window.localStorage.setItem(PANEL_THEME_STORAGE_KEY, id);
+  };
 
   return (
-    <aside className="flex h-full w-full flex-col bg-[#10233d] text-slate-100 lg:w-[380px] lg:min-w-[380px]">
+    <aside
+      data-theme={panelTheme}
+      className="sidebar-panel flex h-full w-full flex-col text-slate-100 lg:w-[380px] lg:min-w-[380px]"
+    >
       <div className="border-b border-white/10 px-5 py-5">
-        <p className="text-xs font-semibold tracking-[0.2em] text-emerald-300">PATH FINDER 1.0.0</p>
-        <h1 className="mt-1 text-xl font-bold">출장·배달 동선 최적화</h1>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold tracking-[0.2em] text-[var(--panel-brand)]">PATH FINDER 1.0.0</p>
+          <div className="flex shrink-0 items-center gap-1.5" role="radiogroup" aria-label="왼쪽 화면 색상">
+            {PANEL_THEMES.map((theme) => {
+              const selectedTheme = theme.id === panelTheme;
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedTheme}
+                  aria-label={theme.label}
+                  title={theme.label}
+                  onClick={() => selectPanelTheme(theme.id)}
+                  className={`h-4 w-4 rounded-full border transition ${
+                    selectedTheme ? "border-white ring-2 ring-white/70" : "border-white/40 hover:border-white"
+                  }`}
+                  style={{ backgroundColor: theme.swatch }}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <h1 className="mt-1 text-xl font-bold">출장.배달 동선을 알려줘</h1>
         <p className="mt-2 text-sm text-slate-300">
-          기본 지역은 대구이며, 전국 교육청 단위로 학교·기관을 검색할 수 있습니다.
+          학교·교육청 기관뿐 아니라 상호나 도로명 주소로도 방문지를 넣을 수 있습니다.
         </p>
       </div>
 
@@ -109,20 +185,31 @@ export function ControlPanel({
         ) : null}
 
         <section className="space-y-2">
-          <label className="text-xs font-semibold text-slate-300">학교 / 기관 검색</label>
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-xs font-semibold text-slate-300">방문지 검색</label>
+            {results.length > 0 ? (
+              <button
+                type="button"
+                onClick={allResultsSelected ? onDeselectResults : onSelectAllResults}
+                className="text-xs text-emerald-300 hover:text-emerald-200"
+              >
+                {allResultsSelected ? "결과에서 해제" : "방문지로 추가"}
+              </button>
+            ) : null}
+          </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
-              placeholder={`${office.shortName} 학교·직속기관명`}
+              placeholder="학교·기관명, 상호 또는 도로명 주소"
               className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2"
             />
           </div>
           {office.code === "D10" ? (
             <div className="flex flex-wrap gap-1.5">
               {DAEGU_OFFICE_SEARCH_SHORTCUTS.map((shortcut) => (
-                <DistrictChip
+                <ShortcutChip
                   key={shortcut}
                   label={shortcut}
                   active={query === shortcut}
@@ -131,6 +218,70 @@ export function ControlPanel({
               ))}
             </div>
           ) : null}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={onDownloadTemplate}
+              className="inline-flex items-center gap-1 rounded-md bg-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-sky-300"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              템플릿
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+              className="inline-flex items-center gap-1 rounded-md bg-rose-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-rose-300 disabled:opacity-50"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {isImporting ? "가져오는 중" : "엑셀 가져오기"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPasteOpen((open) => !open)}
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 ${
+                pasteOpen ? "bg-sky-200" : "bg-sky-400 hover:bg-sky-300"
+              }`}
+            >
+              <ClipboardPaste className="h-3.5 w-3.5" />
+              붙여넣기
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onImportFile(file);
+                event.target.value = "";
+              }}
+            />
+          </div>
+          {pasteOpen ? (
+            <div className="space-y-2">
+              <textarea
+                value={pasteText}
+                onChange={(event) => setPasteText(event.target.value)}
+                rows={4}
+                placeholder={"이름이나 주소를 한 줄에 하나씩 붙여 넣으세요.\n엑셀에서 기관명·주소 열을 복사해도 됩니다."}
+                className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs text-white outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2"
+              />
+              <button
+                type="button"
+                disabled={isImporting || pasteText.trim().length === 0}
+                onClick={() => {
+                  onImportPaste(pasteText);
+                  setPasteText("");
+                  setPasteOpen(false);
+                }}
+                className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-950 disabled:bg-slate-600 disabled:text-slate-300"
+              >
+                목록에 추가
+              </button>
+            </div>
+          ) : null}
+          {importMessage ? <p className="text-xs text-emerald-300">{importMessage}</p> : null}
           {searchMessage ? <p className="text-xs text-amber-300">{searchMessage}</p> : null}
           <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-2">
             {isSearching ? (
@@ -151,13 +302,19 @@ export function ControlPanel({
                   >
                     {item.type === "office" ? (
                       <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
-                    ) : (
+                    ) : item.type === "school" ? (
                       <School className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    ) : (
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                     )}
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{item.name}</span>
                       <span className="block truncate text-xs text-slate-400">
-                        {item.type === "office" ? "직속기관 · " : ""}
+                        {item.source === "kakao"
+                          ? "장소 · "
+                          : item.type === "office"
+                            ? "직속기관 · "
+                            : ""}
                         {item.district} · {item.address}
                       </span>
                     </span>
@@ -185,7 +342,7 @@ export function ControlPanel({
           <div className="max-h-36 space-y-1 overflow-y-auto">
             {selected.length === 0 ? (
               <p className="rounded-lg border border-dashed border-white/15 px-3 py-4 text-sm text-slate-400">
-                검색 결과에서 방문할 기관을 선택하세요.
+              검색 결과에서 방문할 곳을 선택하세요.
               </p>
             ) : (
               selected.map((item) => (
@@ -209,6 +366,20 @@ export function ControlPanel({
               ))
             )}
           </div>
+          {unmatched.length > 0 ? (
+            <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
+              <p className="text-xs font-semibold text-amber-200">찾지 못한 {unmatched.length}곳</p>
+              <ul className="mt-2 max-h-24 space-y-1 overflow-y-auto text-xs text-amber-100">
+                {unmatched.map((item) => (
+                  <li key={`${item.name}-${item.district}-${item.address}`} className="truncate">
+                    {item.name}
+                    {item.district ? ` · ${item.district}` : ""}
+                    {item.reason ? ` (${item.reason})` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
 
         <section className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
@@ -217,7 +388,7 @@ export function ControlPanel({
             출장 설정
           </p>
           <label className="block text-xs text-slate-400">
-            일 방문 기관(학교) 수
+            일 최대 방문 가능 기관(학교) 수
             <input
               type="number"
               min={1}
@@ -252,25 +423,41 @@ export function ControlPanel({
           <button
             type="button"
             onClick={() => onSettingsChange({ includeWeekends: !settings.includeWeekends })}
-            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm ${
+            className={`flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm ${
               settings.includeWeekends ? "bg-emerald-500/20 text-emerald-200" : "bg-black/20 text-slate-300"
             }`}
           >
-            주말 포함
-            <span className="text-xs">{settings.includeWeekends ? "포함" : "제외"}</span>
+            {settings.includeWeekends ? "주말 포함" : "주말 제외"}
           </button>
         </section>
       </div>
 
-      <div className="border-t border-white/10 p-5">
+      <div className="grid grid-cols-3 gap-2 border-t border-white/10 p-4">
         <button
           type="button"
           onClick={onGenerate}
           disabled={isGenerating || selected.length === 0}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-emerald-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300 sm:text-sm"
         >
-          <Route className="h-4 w-4" />
-          {isGenerating ? "동선 생성 중..." : "동선 생성"}
+          <Route className="h-4 w-4 shrink-0" />
+          <span className="truncate">{isGenerating ? "생성 중" : "동선생성"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={!canExport}
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-sky-500 px-2 py-3 text-xs font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300 sm:text-sm"
+        >
+          <Download className="h-4 w-4 shrink-0" />
+          <span className="truncate">내보내기</span>
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl bg-white/10 px-2 py-3 text-xs font-semibold text-white transition hover:bg-white/20 sm:text-sm"
+        >
+          <RotateCcw className="h-4 w-4 shrink-0" />
+          <span className="truncate">초기화</span>
         </button>
       </div>
     </aside>
@@ -292,6 +479,30 @@ function DistrictChip({
       onClick={onClick}
       className={`rounded-full px-2.5 py-1 text-xs ${
         active ? "bg-emerald-500 text-slate-950" : "bg-white/5 text-slate-300 hover:bg-white/10"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ShortcutChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-2.5 py-1.5 text-xs font-semibold ${
+        active
+          ? "bg-amber-400 text-slate-950"
+          : "border border-amber-300/50 bg-amber-400/20 text-amber-100 hover:bg-amber-400/30"
       }`}
     >
       {label}

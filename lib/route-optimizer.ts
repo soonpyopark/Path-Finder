@@ -10,6 +10,9 @@ import {
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 const EARTH_RADIUS_KM = 6371;
+const MAX_VISITS_PER_DAY = 12;
+
+type GeoInstitution = Institution & { lat: number; lng: number };
 
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
@@ -80,36 +83,320 @@ export function workingDates(startDate: string, endDate: string, includeWeekends
   return dates;
 }
 
-function nearestNeighborOrder(
-  institutions: Institution[],
-  startCenter: MapCenter = DAEGU_CENTER,
-): Institution[] {
-  const remaining = institutions.filter(hasCoordinates);
-  const ordered: Institution[] = [];
-  let current: MapCenter = startCenter;
+function clampMaxVisits(value: number): number {
+  return Math.max(1, Math.min(MAX_VISITS_PER_DAY, Math.floor(value) || 1));
+}
 
-  while (remaining.length > 0) {
-    let bestIndex = 0;
+export function suggestedVisitsPerDay(
+  selectedCount: number,
+  startDate: string,
+  endDate: string,
+  includeWeekends: boolean,
+): number {
+  const dayCount = Math.max(1, workingDates(startDate, endDate, includeWeekends).length);
+  if (selectedCount <= 0) return 1;
+  return clampMaxVisits(Math.ceil(selectedCount / dayCount));
+}
+
+export function balancedDaySizes(total: number, dayCount: number, maxPerDay: number): number[] {
+  if (total <= 0 || dayCount <= 0) return [];
+
+  const sizes = Array.from({ length: dayCount }, () => 0);
+  const usable = Math.min(total, dayCount * maxPerDay);
+  const base = Math.floor(usable / dayCount);
+  let extra = usable % dayCount;
+
+  for (let index = 0; index < dayCount; index += 1) {
+    const size = base + (extra > 0 ? 1 : 0);
+    sizes[index] = Math.min(maxPerDay, size);
+    if (extra > 0) extra -= 1;
+  }
+
+  return sizes.filter((size) => size > 0);
+}
+
+function centroidOf(points: GeoInstitution[]): MapCenter {
+  if (points.length === 0) return DAEGU_CENTER;
+  const lat = points.reduce((sum, item) => sum + item.lat, 0) / points.length;
+  const lng = points.reduce((sum, item) => sum + item.lng, 0) / points.length;
+  return { lat, lng };
+}
+
+function pickSpreadSeeds(
+  points: GeoInstitution[],
+  count: number,
+  startCenter: MapCenter,
+): GeoInstitution[] {
+  const remaining = [...points];
+  const seeds: GeoInstitution[] = [];
+  if (remaining.length === 0 || count <= 0) return seeds;
+
+  let nearestIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  remaining.forEach((item, index) => {
+    const distance = haversineKm(startCenter, item);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+  const first = remaining.splice(nearestIndex, 1)[0];
+  if (first) seeds.push(first);
+
+  while (seeds.length < count && remaining.length > 0) {
+    let farthestIndex = 0;
+    let farthestDistance = -1;
+    remaining.forEach((item, index) => {
+      const distance = Math.min(...seeds.map((seed) => haversineKm(seed, item)));
+      if (distance > farthestDistance) {
+        farthestDistance = distance;
+        farthestIndex = index;
+      }
+    });
+    const next = remaining.splice(farthestIndex, 1)[0];
+    if (next) seeds.push(next);
+  }
+
+  return seeds;
+}
+
+function nearestSeedIndex(item: GeoInstitution, seeds: GeoInstitution[]): number {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  seeds.forEach((seed, index) => {
+    const distance = haversineKm(item, seed);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
+}
+
+function clusterByProximity(
+  points: GeoInstitution[],
+  sizes: number[],
+  startCenter: MapCenter,
+): GeoInstitution[][] {
+  const clusters: GeoInstitution[][] = Array.from({ length: sizes.length }, () => []);
+  if (points.length === 0 || sizes.length === 0) return clusters;
+
+  const seeds = pickSpreadSeeds(points, sizes.length, startCenter);
+  if (seeds.length === 0) return clusters;
+
+  for (const item of points) {
+    clusters[nearestSeedIndex(item, seeds)]?.push(item);
+  }
+
+  rebalanceClusterSizes(clusters, sizes);
+  refineClusterSwaps(clusters);
+  return clusters.filter((cluster) => cluster.length > 0);
+}
+
+function rebalanceClusterSizes(clusters: GeoInstitution[][], sizes: number[]): void {
+  const maxPasses = clusters.reduce((sum, cluster) => sum + cluster.length, 0) * 3;
+
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    const underIndex = clusters.findIndex((cluster, index) => cluster.length < (sizes[index] ?? 0));
+    if (underIndex < 0) break;
+
+    const destination = clusters[underIndex] ?? [];
+    const destCenter = destination.length > 0 ? centroidOf(destination) : null;
+    let bestSource = -1;
+    let bestPoint = -1;
     let bestDistance = Number.POSITIVE_INFINITY;
 
-    remaining.forEach((institution, index) => {
-      const distance = haversineKm(current, {
-        lat: institution.lat,
-        lng: institution.lng,
+    clusters.forEach((source, sourceIndex) => {
+      if (source.length <= (sizes[sourceIndex] ?? 0)) return;
+      const center = destCenter ?? centroidOf(source);
+      source.forEach((item, pointIndex) => {
+        const distance = haversineKm(item, center);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestSource = sourceIndex;
+          bestPoint = pointIndex;
+        }
       });
+    });
+
+    if (bestSource < 0 || bestPoint < 0) break;
+    const moved = clusters[bestSource]?.splice(bestPoint, 1)[0];
+    if (moved) destination.push(moved);
+  }
+}
+
+function refineClusterSwaps(clusters: GeoInstitution[][]): void {
+  const centers = clusters.map((cluster) => centroidOf(cluster));
+  let improved = true;
+  let guard = 0;
+
+  while (improved && guard < 40) {
+    improved = false;
+    guard += 1;
+
+    for (let i = 0; i < clusters.length; i += 1) {
+      for (let j = i + 1; j < clusters.length; j += 1) {
+        const left = clusters[i] ?? [];
+        const right = clusters[j] ?? [];
+        const leftCenter = centers[i];
+        const rightCenter = centers[j];
+        if (!leftCenter || !rightCenter) continue;
+
+        for (let a = 0; a < left.length; a += 1) {
+          for (let b = 0; b < right.length; b += 1) {
+            const pointA = left[a];
+            const pointB = right[b];
+            if (!pointA || !pointB) continue;
+            const current = haversineKm(pointA, leftCenter) + haversineKm(pointB, rightCenter);
+            const swapped = haversineKm(pointA, rightCenter) + haversineKm(pointB, leftCenter);
+            if (swapped + 0.01 < current) {
+              left[a] = pointB;
+              right[b] = pointA;
+              centers[i] = centroidOf(left);
+              centers[j] = centroidOf(right);
+              improved = true;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function pathLength(points: GeoInstitution[]): number {
+  let total = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    if (previous && current) total += haversineKm(previous, current);
+  }
+  return total;
+}
+
+function nearestNeighborFrom(points: GeoInstitution[], startIndex: number): GeoInstitution[] {
+  const remaining = [...points];
+  const ordered: GeoInstitution[] = [];
+  const first = remaining.splice(startIndex, 1)[0];
+  if (!first) return ordered;
+  ordered.push(first);
+
+  while (remaining.length > 0) {
+    const current = ordered[ordered.length - 1];
+    if (!current) break;
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    remaining.forEach((item, index) => {
+      const distance = haversineKm(current, item);
       if (distance < bestDistance) {
         bestDistance = distance;
         bestIndex = index;
       }
     });
-
-    const [next] = remaining.splice(bestIndex, 1);
+    const next = remaining.splice(bestIndex, 1)[0];
     if (!next) break;
     ordered.push(next);
-    current = { lat: next.lat as number, lng: next.lng as number };
   }
 
   return ordered;
+}
+
+function twoOptPath(points: GeoInstitution[]): GeoInstitution[] {
+  if (points.length < 4) return points;
+
+  const route = [...points];
+  let improved = true;
+  let guard = 0;
+
+  while (improved && guard < 80) {
+    improved = false;
+    guard += 1;
+    for (let i = 0; i < route.length - 2; i += 1) {
+      for (let k = i + 2; k < route.length; k += 1) {
+        const candidate = route.slice(0, i + 1).concat(route.slice(i + 1, k + 1).reverse(), route.slice(k + 1));
+        if (pathLength(candidate) + 0.001 < pathLength(route)) {
+          route.splice(0, route.length, ...candidate);
+          improved = true;
+        }
+      }
+    }
+  }
+
+  return route;
+}
+
+function heldKarpPath(points: GeoInstitution[], startIndex: number): GeoInstitution[] {
+  const count = points.length;
+  const dist: number[][] = Array.from({ length: count }, (_, from) =>
+    Array.from({ length: count }, (_, to) => {
+      if (from === to) return 0;
+      const left = points[from];
+      const right = points[to];
+      return left && right ? haversineKm(left, right) : 0;
+    }),
+  );
+
+  const subsetCount = 1 << count;
+  const inf = Number.POSITIVE_INFINITY;
+  const dp = Array.from({ length: subsetCount }, () => Array.from({ length: count }, () => inf));
+  const parent = Array.from({ length: subsetCount }, () => Array.from({ length: count }, () => -1));
+  dp[1 << startIndex][startIndex] = 0;
+
+  for (let mask = 0; mask < subsetCount; mask += 1) {
+    for (let last = 0; last < count; last += 1) {
+      const currentCost = dp[mask]?.[last];
+      if (currentCost === undefined || currentCost === inf || (mask & (1 << last)) === 0) continue;
+      for (let next = 0; next < count; next += 1) {
+        if ((mask & (1 << next)) !== 0) continue;
+        const nextMask = mask | (1 << next);
+        const nextCost = currentCost + (dist[last]?.[next] ?? inf);
+        const row = dp[nextMask];
+        if (row && nextCost < (row[next] ?? inf)) {
+          row[next] = nextCost;
+          const parentRow = parent[nextMask];
+          if (parentRow) parentRow[next] = last;
+        }
+      }
+    }
+  }
+
+  const fullMask = subsetCount - 1;
+  let endIndex = startIndex;
+  let bestCost = inf;
+  (dp[fullMask] ?? []).forEach((cost, index) => {
+    if (cost < bestCost) {
+      bestCost = cost;
+      endIndex = index;
+    }
+  });
+
+  const order: number[] = [];
+  let mask = fullMask;
+  let current = endIndex;
+  while (current >= 0) {
+    order.push(current);
+    const previous = parent[mask]?.[current] ?? -1;
+    mask ^= 1 << current;
+    current = previous;
+  }
+  order.reverse();
+  return order.map((index) => points[index]).filter((item): item is GeoInstitution => Boolean(item));
+}
+
+function shortestVisitOrder(points: GeoInstitution[], startCenter: MapCenter): GeoInstitution[] {
+  if (points.length <= 1) return points;
+
+  let startIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  points.forEach((item, index) => {
+    const distance = haversineKm(startCenter, item);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      startIndex = index;
+    }
+  });
+
+  if (points.length <= MAX_VISITS_PER_DAY) return heldKarpPath(points, startIndex);
+  return twoOptPath(nearestNeighborFrom(points, startIndex));
 }
 
 function buildStops(institutions: Institution[]): RouteStop[] {
@@ -132,42 +419,60 @@ function buildStops(institutions: Institution[]): RouteStop[] {
   });
 }
 
+function compareByOfficeDistance(left: GeoInstitution[], right: GeoInstitution[], startCenter: MapCenter): number {
+  return haversineKm(centroidOf(left), startCenter) - haversineKm(centroidOf(right), startCenter);
+}
+
 export function buildRoutePlan(
   institutions: Institution[],
   settings: TripSettings,
   startCenter: MapCenter = DAEGU_CENTER,
 ): RoutePlan {
-  const withCoords = nearestNeighborOrder(institutions, startCenter);
+  const geoPoints = institutions.filter(hasCoordinates);
   const withoutCoords = institutions.filter((item) => !hasCoordinates(item));
   const dates = workingDates(settings.startDate, settings.endDate, settings.includeWeekends);
-  const visitsPerDay = Math.max(1, Math.min(12, Math.floor(settings.visitsPerDay) || 1));
+  const maxPerDay = clampMaxVisits(settings.visitsPerDay);
 
-  const days: DailyRoute[] = [];
-  let cursor = 0;
+  if (dates.length === 0 || geoPoints.length === 0) {
+    return {
+      days: [],
+      unassigned: [...geoPoints, ...withoutCoords],
+      generatedAt: new Date().toISOString(),
+    };
+  }
 
-  for (const date of dates) {
-    if (cursor >= withCoords.length) break;
-    const chunk = withCoords.slice(cursor, cursor + visitsPerDay);
-    cursor += visitsPerDay;
-    const stops = buildStops(chunk);
-    const totalDistanceKm = Number(
-      stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0).toFixed(2),
-    );
+  const capacity = dates.length * maxPerDay;
+  const ranked = [...geoPoints].sort(
+    (left, right) => haversineKm(centroidOf(geoPoints), left) - haversineKm(centroidOf(geoPoints), right),
+  );
+  const kept = ranked.slice(0, capacity);
+  const overflow = ranked.slice(capacity);
+  const dayCount = Math.min(dates.length, Math.max(1, Math.ceil(kept.length / maxPerDay)));
+  const sizes = balancedDaySizes(kept.length, dayCount, maxPerDay);
+  const assigned = clusterByProximity(kept, sizes, startCenter).sort((left, right) =>
+    compareByOfficeDistance(left, right, startCenter),
+  );
+
+  const days: DailyRoute[] = assigned.map((cluster, index) => {
+    const date = dates[index] ?? "";
+    const stops = buildStops(shortestVisitOrder(cluster, startCenter));
     const labels = formatKoreanDate(date);
 
-    days.push({
+    return {
       id: `day-${date}`,
       date,
       dayLabel: labels.dayLabel,
       weekday: labels.weekday,
       stops,
-      totalDistanceKm,
-    });
-  }
+      totalDistanceKm: Number(
+        stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0).toFixed(2),
+      ),
+    };
+  });
 
   return {
     days,
-    unassigned: [...withCoords.slice(cursor), ...withoutCoords],
+    unassigned: [...overflow, ...withoutCoords],
     generatedAt: new Date().toISOString(),
   };
 }

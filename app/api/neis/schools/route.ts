@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { NATIONWIDE_OFFICE_CODE } from "@/lib/regions";
+import { NATIONWIDE_OFFICE_CODE, getNeisOfficeCodes } from "@/lib/regions";
 import { buildSchoolInfoUrl, getNeisHttp } from "@/lib/neis-client";
 import { parseNeisSchoolResponse } from "@/lib/neis";
+import type { Institution } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,52 @@ function parsePayload(text: string): Parameters<typeof parseNeisSchoolResponse>[
   } catch {
     return null;
   }
+}
+
+async function fetchSchoolsForOffice(
+  apiKey: string,
+  query: string,
+  officeCode?: string,
+): Promise<{ items: Institution[]; message?: string; status: number }> {
+  const url = buildSchoolInfoUrl({
+    apiKey,
+    query,
+    officeCode,
+  });
+
+  let lastStatus = 0;
+  let payloadText = "";
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const result = await getNeisHttp(url);
+    lastStatus = result.status;
+    payloadText = result.text;
+    if (parsePayload(result.text)) break;
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+    }
+  }
+
+  const payload = parsePayload(payloadText);
+  if (!payload) {
+    return { items: [], status: lastStatus };
+  }
+
+  const parsed = parseNeisSchoolResponse(payload);
+  return { items: parsed.items, message: parsed.message, status: lastStatus };
+}
+
+function mergeSchoolItems(groups: Institution[][]): Institution[] {
+  const merged = new Map<string, Institution>();
+  for (const group of groups) {
+    for (const item of group) {
+      const key = item.schoolCode
+        ? `${item.officeCode}-${item.schoolCode}`
+        : `${item.name}-${item.address}`;
+      if (!merged.has(key)) merged.set(key, item);
+    }
+  }
+  return Array.from(merged.values());
 }
 
 export async function GET(request: NextRequest) {
@@ -38,28 +85,19 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const url = buildSchoolInfoUrl({
-    apiKey,
-    query,
-    officeCode: officeCode === NATIONWIDE_OFFICE_CODE ? undefined : officeCode,
-  });
+  const neisCodes =
+    officeCode === NATIONWIDE_OFFICE_CODE ? [undefined] : (getNeisOfficeCodes(officeCode) ?? [officeCode]);
 
   try {
-    let lastStatus = 0;
-    let payloadText = "";
+    const results = await Promise.all(
+      neisCodes.map((code) => fetchSchoolsForOffice(apiKey, query, code)),
+    );
+    const items = mergeSchoolItems(results.map((result) => result.items));
+    const failed = results.filter((result) => result.items.length === 0 && !result.message);
+    const message = results.find((result) => result.message)?.message;
 
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      const result = await getNeisHttp(url);
-      lastStatus = result.status;
-      payloadText = result.text;
-      if (parsePayload(result.text)) break;
-      if (attempt < 3) {
-        await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
-      }
-    }
-
-    const payload = parsePayload(payloadText);
-    if (!payload) {
+    if (items.length === 0 && failed.length === results.length) {
+      const lastStatus = results[results.length - 1]?.status ?? 0;
       return NextResponse.json({
         ok: false,
         items: [],
@@ -71,12 +109,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const parsed = parseNeisSchoolResponse(payload);
     return NextResponse.json({
       ok: true,
-      items: parsed.items,
+      items,
       source: "neis",
-      message: parsed.message,
+      message: items.length > 0 ? undefined : message,
     });
   } catch {
     return NextResponse.json({

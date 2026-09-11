@@ -4,7 +4,7 @@ export type { MapCenter };
 export { DAEGU_CENTER, DAEGU_DISTRICTS, DEFAULT_OFFICE_CODE } from "@/lib/regions";
 
 export type InstitutionType = "school" | "office" | "other";
-export type InstitutionSource = "dummy" | "neis";
+export type InstitutionSource = "dummy" | "neis" | "kakao";
 
 export interface Institution {
   id: string;

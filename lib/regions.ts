@@ -10,10 +10,14 @@ export interface EducationOffice {
   center: MapCenter;
   mapLevel: number;
   districts: string[];
+  aliasCodes?: string[];
+  neisCodes?: string[];
 }
 
 export const NATIONWIDE_OFFICE_CODE = "ALL";
 export const DEFAULT_OFFICE_CODE = "D10";
+export const JEONNAM_GWANGJU_OFFICE_CODE = "JG10";
+export const JEONNAM_GWANGJU_NEIS_CODES = ["F10", "Q10"] as const;
 
 export const KOREA_CENTER: MapCenter = {
   lat: 36.5,
@@ -121,12 +125,34 @@ export const EDUCATION_OFFICES: EducationOffice[] = [
     ],
   },
   {
-    code: "F10",
-    name: "광주광역시",
-    shortName: "광주",
-    center: { lat: 35.1595, lng: 126.8526 },
-    mapLevel: 8,
-    districts: ["동구", "서구", "남구", "북구", "광산구"],
+    code: JEONNAM_GWANGJU_OFFICE_CODE,
+    name: "전남광주통합특별시",
+    shortName: "전남광주",
+    center: { lat: 34.99, lng: 126.66 },
+    mapLevel: 10,
+    aliasCodes: ["F10", "Q10"],
+    neisCodes: [...JEONNAM_GWANGJU_NEIS_CODES],
+    districts: [
+      "동구",
+      "서구",
+      "남구",
+      "북구",
+      "광산구",
+      "목포시",
+      "여수시",
+      "순천시",
+      "나주시",
+      "광양시",
+      "무안군",
+      "담양군",
+      "화순군",
+      "해남군",
+      "영광군",
+      "장성군",
+      "완도군",
+      "진도군",
+      "신안군",
+    ],
   },
   {
     code: "G10",
@@ -225,14 +251,6 @@ export const EDUCATION_OFFICES: EducationOffice[] = [
     districts: ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시"],
   },
   {
-    code: "Q10",
-    name: "전라남도",
-    shortName: "전남",
-    center: { lat: 34.816, lng: 126.463 },
-    mapLevel: 10,
-    districts: ["목포시", "여수시", "순천시", "나주시", "광양시", "무안군"],
-  },
-  {
     code: "R10",
     name: "경상북도",
     shortName: "경북",
@@ -259,7 +277,30 @@ export const EDUCATION_OFFICES: EducationOffice[] = [
 ];
 
 export function getEducationOffice(code: string): EducationOffice {
-  return EDUCATION_OFFICES.find((office) => office.code === code) ?? getDefaultOffice();
+  return (
+    EDUCATION_OFFICES.find(
+      (office) => office.code === code || office.aliasCodes?.includes(code),
+    ) ?? getDefaultOffice()
+  );
+}
+
+export function getNeisOfficeCodes(code: string): string[] | undefined {
+  if (code === NATIONWIDE_OFFICE_CODE) return undefined;
+  const office = getEducationOffice(code);
+  return office.neisCodes ?? [office.code];
+}
+
+export function matchesSelectedOffice(itemOfficeCode: string, selectedCode: string): boolean {
+  if (selectedCode === NATIONWIDE_OFFICE_CODE) return true;
+  const selectedCodes = getNeisOfficeCodes(selectedCode) ?? [selectedCode];
+  const itemOffice = getEducationOffice(itemOfficeCode);
+  const itemCodes = [
+    itemOfficeCode,
+    itemOffice.code,
+    ...(itemOffice.aliasCodes ?? []),
+    ...(itemOffice.neisCodes ?? []),
+  ];
+  return selectedCodes.some((code) => itemCodes.includes(code));
 }
 
 export function getDefaultOffice(): EducationOffice {

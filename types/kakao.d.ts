@@ -1,17 +1,29 @@
 export {};
 
+interface KakaoPlaces {
+  keywordSearch: (
+    keyword: string,
+    callback: (result: Array<Record<string, string>>, status: string) => void,
+    options?: { size?: number; location?: unknown; radius?: number },
+  ) => void;
+}
+
+interface KakaoGeocoder {
+  addressSearch: (
+    address: string,
+    callback: (result: Array<{ x: string; y: string } & Record<string, unknown>>, status: string) => void,
+  ) => void;
+}
+
 declare global {
   interface Window {
     kakao?: {
       maps?: {
         load?: (callback: () => void) => void;
+        LatLng?: new (lat: number, lng: number) => unknown;
         services?: {
-          Geocoder: new () => {
-            addressSearch: (
-              address: string,
-              callback: (result: Array<{ x: string; y: string }>, status: string) => void,
-            ) => void;
-          };
+          Places: new () => KakaoPlaces;
+          Geocoder: new () => KakaoGeocoder;
         };
       };
     };

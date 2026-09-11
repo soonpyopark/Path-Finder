@@ -1,5 +1,5 @@
 import { DAEGU_DIRECT_INSTITUTIONS } from "@/lib/daegu-direct-institutions";
-import { DEFAULT_OFFICE_CODE, NATIONWIDE_OFFICE_CODE } from "@/lib/regions";
+import { DEFAULT_OFFICE_CODE, matchesSelectedOffice } from "@/lib/regions";
 import type { Institution } from "@/lib/types";
 
 export const DUMMY_INSTITUTIONS: Institution[] = [
@@ -292,7 +292,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
   },
   {
     id: "dummy-gwangju-office",
-    name: "광주광역시교육청",
+    name: "전남광주통합특별시교육청 광주청사",
     type: "office",
     address: "광주광역시 서구 화운로 117",
     district: "서구",
@@ -300,6 +300,7 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
     lat: 35.1522,
     lng: 126.8513,
     source: "dummy",
+    keywords: ["광주교육청", "광주광역시교육청", "전남광주", "통합교육청"],
   },
   {
     id: "dummy-daejeon-office",
@@ -391,14 +392,15 @@ export const DUMMY_INSTITUTIONS: Institution[] = [
   },
   {
     id: "dummy-jeonnam-office",
-    name: "전라남도교육청",
+    name: "전남광주통합특별시교육청 무안청사",
     type: "office",
-    address: "전라남도 무안군 삼향읍 남악로 38",
+    address: "전남광주통합특별시 무안군 삼향읍 남악로 38",
     district: "무안군",
     officeCode: "Q10",
     lat: 34.8161,
     lng: 126.4629,
     source: "dummy",
+    keywords: ["전남교육청", "전라남도교육청", "전남광주", "통합교육청"],
   },
   {
     id: "dummy-gyeongbuk-office",
@@ -443,8 +445,7 @@ export function searchDummyInstitutions(
   const normalized = query.trim().toLowerCase();
 
   return DUMMY_INSTITUTIONS.filter((item) => {
-    const matchesOffice =
-      officeCode === NATIONWIDE_OFFICE_CODE || item.officeCode === officeCode;
+    const matchesOffice = matchesSelectedOffice(item.officeCode, officeCode);
     const matchesDistrict = !district || district === "all" || item.district === district;
     if (!matchesOffice || !matchesDistrict) return false;
     if (!normalized) return true;
