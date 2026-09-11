@@ -22,7 +22,7 @@ copy .env.example .env.local
 
 ```
 NEXT_PUBLIC_KAKAO_MAP_KEY=
-NEIS_API_KEY=
+NEXT_PUBLIC_NEIS_API_KEY=
 ```
 
 개발 서버는 다음 명령으로 실행합니다.
@@ -61,15 +61,15 @@ Windows PowerShell에서도 위 npm 스크립트를 그대로 사용하면 됩�
 
 | 변수 | 설명 |
 | --- | --- |
-| `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오 개발자 콘솔 JavaScript 키. 지도 SDK가 브라우저에서 쓰므로 `NEXT_PUBLIC_`이 필요합니다. Vercel에서는 **Config**로 두면 됩니다. |
-| `NEIS_API_KEY` | 나이스 교육정보 개방 포털 API 키. 서버에서만 쓰이므로 공개 접두사를 붙이지 않습니다. Vercel에서는 **Sensitive**로 둡니다. |
+| `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오 개발자 콘솔 JavaScript 키 |
+| `NEXT_PUBLIC_NEIS_API_KEY` | 나이스 교육정보 개방 포털 API 키 |
 
 카카오 개발자 콘솔 Web 플랫폼에 `http://localhost:3000`과 Vercel 도메인을 등록해야 지도가 표시됩니다.
 
 ## Vercel 배포
 
 1. GitHub 저장소를 Vercel에 연결합니다.
-2. Environment Variables에 위 두 키를 넣습니다. 카카오 키는 Config, 나이스 키는 Sensitive로 설정하세요. 예전에 `NEXT_PUBLIC_NEIS_API_KEY`를 썼다면 `NEIS_API_KEY`로 이름을 바꾸면 됩니다.
+2. Environment Variables에 위 두 키를 넣습니다.
 3. 카카오 콘솔 Web 도메인에 Vercel URL을 등록합니다.
 
 ## 라이선스
