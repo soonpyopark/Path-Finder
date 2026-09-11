@@ -65,7 +65,7 @@ function mergeSchoolItems(groups: Institution[][]): Institution[] {
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   const officeCode = request.nextUrl.searchParams.get("officeCode")?.trim() || "D10";
-  const apiKey = process.env.NEXT_PUBLIC_NEIS_API_KEY?.trim();
+  const apiKey = process.env.NEIS_API_KEY?.trim() || process.env.NEXT_PUBLIC_NEIS_API_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json({

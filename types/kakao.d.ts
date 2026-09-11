@@ -33,6 +33,7 @@ declare global {
 declare namespace NodeJS {
   interface ProcessEnv {
     NEXT_PUBLIC_KAKAO_MAP_KEY?: string;
+    NEIS_API_KEY?: string;
     NEXT_PUBLIC_NEIS_API_KEY?: string;
   }
 }
