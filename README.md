@@ -4,6 +4,8 @@
 
 **Production:** [https://pathfinder-eight-pearl.vercel.app/](https://pathfinder-eight-pearl.vercel.app/)
 
+**저장소:** [GitHub](https://github.com/soonpyopark/Path-Finder) · [GitLab](https://gitlab.aigov.go.kr/soonpyo/pathfinder)
+
 기본 지역은 **대구광역시**이며, 좌측 패널의 교육청 선택으로 전국에서 사용할 수 있습니다. 검색은 내장 더미 데이터와 나이스 개방 포털 API를 함께 쓰고, 선택된 방문지를 일자별로 나눠 카카오맵에 표시합니다.
 
 ## 실행 화면

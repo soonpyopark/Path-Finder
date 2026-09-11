@@ -24,7 +24,6 @@ export async function exportRoutePlanToExcel(options: {
   selectedCount: number;
   plan: RoutePlan;
 }): Promise<void> {
-  const XLSX = await import("xlsx");
   const { office, settings, selectedCount, plan } = options;
   const assignedCount = plan.days.reduce((sum, day) => sum + day.stops.length, 0);
   const totalDistanceKm = Number(
@@ -91,30 +90,15 @@ export async function exportRoutePlanToExcel(options: {
     }
   }
 
-  const workbook = XLSX.utils.book_new();
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
-  const routeSheet = XLSX.utils.aoa_to_sheet(routeRows);
-  const unassignedSheet = XLSX.utils.aoa_to_sheet(unassignedRows);
-
-  summarySheet["!cols"] = [{ wch: 22 }, { wch: 36 }];
-  routeSheet["!cols"] = [
-    { wch: 12 },
-    { wch: 8 },
-    { wch: 8 },
-    { wch: 10 },
-    { wch: 28 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 42 },
-    { wch: 14 },
-    { wch: 14 },
-  ];
-  unassignedSheet["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 42 }, { wch: 16 }];
-
-  XLSX.utils.book_append_sheet(workbook, summarySheet, "요약");
-  XLSX.utils.book_append_sheet(workbook, routeSheet, "일자별 동선");
-  XLSX.utils.book_append_sheet(workbook, unassignedSheet, "미배정");
-
   const filename = `PathFinder_동선_${office.shortName}_${fileStamp(settings.startDate)}.xlsx`;
-  XLSX.writeFile(workbook, filename);
+  const { downloadWorkbook } = await import("@/lib/excel-file");
+  await downloadWorkbook(filename, [
+    { name: "요약", rows: summaryRows, columnWidths: [22, 36] },
+    {
+      name: "일자별 동선",
+      rows: routeRows,
+      columnWidths: [12, 8, 8, 10, 28, 12, 12, 42, 14, 14],
+    },
+    { name: "미배정", rows: unassignedRows, columnWidths: [28, 12, 12, 42, 16] },
+  ]);
 }
