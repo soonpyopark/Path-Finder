@@ -236,13 +236,14 @@ export function ControlPanel({
               ))}
             </div>
           ) : null}
-          {/* flex-auto grows each button from its label width by the same amount,
-              so the leftover space on a line becomes identical padding on every button. */}
-          <div className="flex flex-wrap gap-1.5">
+          {/* Same column count and gap as the action bar at the bottom of the panel.
+              When the panel narrows, the template button takes a row of its own so the
+              other two wrap together instead of leaving one alone on the second row. */}
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-2 lg:grid-cols-3">
             <button
               type="button"
               onClick={onDownloadTemplate}
-              className="inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md bg-sky-200/90 px-2 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100"
+              className="inline-flex min-w-0 items-center justify-center gap-1 rounded-md bg-sky-200/90 px-1.5 py-1.5 text-[11px] font-semibold text-sky-950 hover:bg-sky-100 md:col-span-2 lg:col-span-1"
             >
               <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">템플릿 다운로드</span>
@@ -251,7 +252,7 @@ export function ControlPanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
-              className="inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md bg-rose-200/90 px-2 py-1.5 text-[11px] font-semibold text-rose-950 hover:bg-rose-100 disabled:opacity-50"
+              className="inline-flex min-w-0 items-center justify-center gap-1 rounded-md bg-rose-200/90 px-1.5 py-1.5 text-[11px] font-semibold text-rose-950 hover:bg-rose-100 disabled:opacity-50"
             >
               <Upload className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{isImporting ? "가져오는 중" : "엑셀 가져오기"}</span>
@@ -259,7 +260,7 @@ export function ControlPanel({
             <button
               type="button"
               onClick={() => setPasteOpen((open) => !open)}
-              className={`inline-flex min-w-0 flex-auto items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold text-emerald-950 ${
+              className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 py-1.5 text-[11px] font-semibold text-emerald-950 ${
                 pasteOpen ? "bg-emerald-100" : "bg-emerald-200/90 hover:bg-emerald-100"
               }`}
             >
@@ -493,7 +494,7 @@ export function ControlPanel({
         </section>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 border-t border-white/10 p-4">
+      <div className="grid grid-cols-3 gap-2 border-t border-white/10 px-5 py-4">
         <button
           type="button"
           onClick={onGenerate}
