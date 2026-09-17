@@ -136,7 +136,7 @@ function KakaoMapInner({
   const activeColor = DAY_COLORS[Math.max(0, days.findIndex((day) => day.id === activeDay?.id)) % DAY_COLORS.length];
 
   return (
-    <div ref={frameRef} className="h-full w-full">
+    <div ref={frameRef} className="w-full">
     <Map
       key={office.code}
       center={office.center}
@@ -227,7 +227,7 @@ function KakaoMapInner({
 
 function MapPlaceholder({ message, hint }: { message: string; hint?: string }) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-200 text-slate-600">
+    <div className="flex w-full flex-col items-center justify-center gap-3 bg-slate-200 text-slate-600">
       <MapPinOff className="h-8 w-8" />
       <p className="max-w-lg px-6 text-center text-sm font-medium">{message}</p>
       {hint ? <p className="max-w-lg px-6 text-center text-xs leading-5 text-slate-500">{hint}</p> : null}

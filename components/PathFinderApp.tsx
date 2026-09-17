@@ -336,7 +336,7 @@ export function PathFinderApp() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col lg:h-screen lg:flex-row lg:overflow-hidden">
+    <div className="flex min-h-dvh flex-col md:h-dvh md:flex-row md:overflow-hidden">
       <ControlPanel
         office={office}
         district={district}
@@ -379,8 +379,10 @@ export function PathFinderApp() {
         onReset={resetAll}
       />
 
-      <main className="flex min-h-[70vh] min-w-0 flex-1 flex-col overflow-hidden bg-[#eef3f8] lg:min-h-0">
-        <section className="relative min-h-[360px] min-w-0 flex-1">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#eef3f8]">
+        {/* flex makes the map fill this box even when the section height comes from
+            flex sizing, where the child's h-full percentage would resolve to auto. */}
+        <section className="relative flex min-h-[320px] min-w-0 flex-1">
           <KakaoMapDynamic
             office={office}
             selected={selected}
@@ -394,7 +396,7 @@ export function PathFinderApp() {
           className={`flex min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-slate-50 ${
             resultsCollapsed
               ? "h-auto shrink-0"
-              : "h-[42vh] min-h-[320px] max-h-[460px]"
+              : "h-[42vh] min-h-[260px] max-h-[460px]"
           }`}
         >
           <RouteCardList

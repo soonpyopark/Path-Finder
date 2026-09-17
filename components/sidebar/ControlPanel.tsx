@@ -116,7 +116,7 @@ export function ControlPanel({
   return (
     <aside
       data-theme={panelTheme}
-      className="sidebar-panel flex h-full w-full shrink-0 flex-col text-slate-100 lg:w-[380px] lg:min-w-[380px]"
+      className="sidebar-panel flex max-h-[60vh] w-full shrink-0 flex-col text-slate-100 md:h-full md:max-h-none md:w-[320px] md:min-w-[320px] lg:w-[380px] lg:min-w-[380px]"
     >
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center justify-between gap-3">
@@ -127,7 +127,7 @@ export function ControlPanel({
               title="새로고침"
               className="truncate text-xs font-semibold tracking-wide text-[var(--panel-brand)] transition hover:text-white"
             >
-              Path Finder v1.0.1
+              Path Finder v1.0.2
             </button>
             <button
               type="button"
@@ -237,8 +237,8 @@ export function ControlPanel({
             </div>
           ) : null}
           {/* flex-auto grows each button from its label width by the same amount,
-              so the leftover space becomes identical padding on every button. */}
-          <div className="flex gap-1.5">
+              so the leftover space on a line becomes identical padding on every button. */}
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={onDownloadTemplate}
