@@ -56,6 +56,7 @@ interface ControlPanelProps {
   onSelectAllResults: () => void;
   onDeselectResults: () => void;
   onDownloadTemplate: () => void;
+  onExportSelected: () => void;
   onImportFile: (file: File) => void;
   onImportPaste: (text: string) => void;
   onSettingsChange: (patch: Partial<TripSettings>) => void;
@@ -87,6 +88,7 @@ export function ControlPanel({
   onSelectAllResults,
   onDeselectResults,
   onDownloadTemplate,
+  onExportSelected,
   onImportFile,
   onImportPaste,
   onSettingsChange,
@@ -352,14 +354,24 @@ export function ControlPanel({
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-300">선택된 방문지 {selected.length}곳</p>
             {selected.length > 0 ? (
-              <button
-                type="button"
-                onClick={onClearSelected}
-                className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                비우기
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onExportSelected}
+                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  템플릿으로 내보내기
+                </button>
+                <button
+                  type="button"
+                  onClick={onClearSelected}
+                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  비우기
+                </button>
+              </div>
             ) : null}
           </div>
           <div className="panel-scroll max-h-36 space-y-1 overflow-y-auto">
@@ -393,11 +405,9 @@ export function ControlPanel({
             <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
               <p className="text-xs font-semibold text-amber-200">찾지 못한 {unmatched.length}곳</p>
               <ul className="panel-scroll mt-2 max-h-24 space-y-1 overflow-y-auto text-xs text-amber-100">
-                {unmatched.map((item) => (
-                  <li key={`${item.name}-${item.district}-${item.address}`} className="truncate">
+                {unmatched.map((item, index) => (
+                  <li key={`${item.name}-${index}`} className="truncate">
                     {item.name}
-                    {item.district ? ` · ${item.district}` : ""}
-                    {item.reason ? ` (${item.reason})` : ""}
                   </li>
                 ))}
               </ul>
@@ -446,6 +456,26 @@ export function ControlPanel({
               onChange={(returnPoint) => onSettingsChange({ returnPoint, returnSameAsStart: false })}
             />
           )}
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block text-xs text-slate-400">
+              시작일
+              <input
+                type="date"
+                value={settings.startDate}
+                onChange={(event) => onSettingsChange({ startDate: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
+              />
+            </label>
+            <label className="block text-xs text-slate-400">
+              종료일
+              <input
+                type="date"
+                value={settings.endDate}
+                onChange={(event) => onSettingsChange({ endDate: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
+              />
+            </label>
+          </div>
           <div className="grid grid-cols-3 items-end gap-2">
             <label className="block min-w-0 text-[11px] leading-4 text-slate-400">
               출장 인원(명)
@@ -484,26 +514,6 @@ export function ControlPanel({
             >
               {settings.includeWeekends ? "주말 포함" : "주말 제외"}
             </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-xs text-slate-400">
-              시작일
-              <input
-                type="date"
-                value={settings.startDate}
-                onChange={(event) => onSettingsChange({ startDate: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
-              />
-            </label>
-            <label className="block text-xs text-slate-400">
-              종료일
-              <input
-                type="date"
-                value={settings.endDate}
-                onChange={(event) => onSettingsChange({ endDate: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
-              />
-            </label>
           </div>
         </section>
       </div>
@@ -553,7 +563,7 @@ const HELP_STEPS = [
   },
   {
     title: "3. 엑셀로 한꺼번에 넣습니다",
-    body: "'템플릿 다운로드'로 받은 양식에 방문지를 적어 '엑셀 가져오기'로 올리거나, 목록을 복사해 '붙여넣기'로 넣습니다. 찾지 못한 항목은 따로 알려 드립니다.",
+    body: "'템플릿 다운로드'로 받은 양식에 방문지를 적어 '엑셀 가져오기'로 올리거나, 목록을 복사해 '붙여넣기'로 넣습니다. 선택한 목록은 '선택된 방문지'의 '템플릿으로 내보내기'로 받아 두었다가 나중에 같은 방식으로 다시 가져올 수 있습니다. 찾지 못한 항목은 따로 알려 드립니다.",
   },
   {
     title: "4. 출장 조건을 정합니다",

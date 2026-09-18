@@ -21,6 +21,26 @@ const TYPE_HEADERS = ["구분", "유형", "type"];
 const DISTRICT_HEADERS = ["시군구", "구", "지역", "district"];
 const ADDRESS_HEADERS = ["주소", "address"];
 
+function visitTypeLabel(type: Institution["type"]): string {
+  if (type === "office") return "직속기관";
+  if (type === "school") return "학교";
+  return "장소";
+}
+
+export async function exportSelectedVisits(selected: Institution[]): Promise<void> {
+  if (selected.length === 0) return;
+
+  const rows: Array<Array<string | number>> = [["기관명", "구분", "시군구", "주소"]];
+  for (const item of selected) {
+    rows.push([item.name, visitTypeLabel(item.type), item.district, item.address]);
+  }
+
+  const { downloadWorkbook } = await import("@/lib/excel-file");
+  await downloadWorkbook("PathFinder_방문지.xlsx", [
+    { name: "방문지", rows, columnWidths: [32, 12, 12, 42] },
+  ]);
+}
+
 export function downloadVisitTemplate(): void {
   void import("@/lib/excel-file").then(({ downloadWorkbook }) =>
     downloadWorkbook("PathFinder_방문지_템플릿.xlsx", [
@@ -59,7 +79,7 @@ export function downloadVisitTemplate(): void {
         ["■ 주의"],
         ["- 빈 줄은 무시됩니다."],
         ["- 이미 선택된 방문지는 다시 가져와도 중복으로 넣지 않고 기존 목록에 이어 붙입니다."],
-        ["- Path Finder에서 내보낸 '일자별 동선' 엑셀도 같은 방식으로 가져올 수 있습니다."],
+        ["- Path Finder에서 내보낸 '선택된 방문지' 엑셀과 '일자별 동선' 엑셀도 같은 방식으로 가져올 수 있습니다."],
         ["- 찾지 못한 곳은 화면의 '찾지 못한 곳'에 표시되니, 이름을 고치거나 주소를 보강해 다시 가져오면 됩니다."],
       ],
       columnWidths: [96],

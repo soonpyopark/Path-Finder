@@ -15,6 +15,7 @@ import type { Institution, RoutePlan, TripSettings } from "@/lib/types";
 import { isOfficeDefaultWaypoint, resolvedReturnPoint, waypointFromOffice } from "@/lib/waypoints";
 import {
   downloadVisitTemplate,
+  exportSelectedVisits,
   matchVisitRows,
   mergeSelected,
   parseVisitFile,
@@ -378,6 +379,9 @@ export function PathFinderApp() {
           setSelected((current) => current.filter((item) => !ids.has(item.id)));
         }}
         onDownloadTemplate={downloadVisitTemplate}
+        onExportSelected={() => {
+          void exportSelectedVisits(selected);
+        }}
         onImportFile={(file) => {
           void parseVisitFile(file).then((rows) => importVisitRows(rows));
         }}
