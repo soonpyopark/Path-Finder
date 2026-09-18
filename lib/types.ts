@@ -30,6 +30,7 @@ export interface TripWaypoint {
 }
 
 export interface TripSettings {
+  travelerCount: number;
   visitsPerDay: number;
   startDate: string;
   endDate: string;
@@ -50,6 +51,8 @@ export interface DailyRoute {
   date: string;
   dayLabel: string;
   weekday: string;
+  travelerIndex: number;
+  travelerLabel: string;
   stops: RouteStop[];
   totalDistanceKm: number;
   commuteToReturnKm: number;

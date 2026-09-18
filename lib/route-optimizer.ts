@@ -13,6 +13,7 @@ import { resolvedReturnPoint } from "@/lib/waypoints";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 const EARTH_RADIUS_KM = 6371;
 const MAX_VISITS_PER_DAY = 12;
+const MAX_TRAVELERS = 10;
 
 type GeoInstitution = Institution & { lat: number; lng: number };
 
@@ -89,15 +90,24 @@ function clampMaxVisits(value: number): number {
   return Math.max(1, Math.min(MAX_VISITS_PER_DAY, Math.floor(value) || 1));
 }
 
+export function clampTravelerCount(value: number): number {
+  return Math.max(1, Math.min(MAX_TRAVELERS, Math.floor(value) || 1));
+}
+
+export function travelerLabel(travelerIndex: number): string {
+  return `출장자 ${travelerIndex + 1}`;
+}
+
 export function suggestedVisitsPerDay(
   selectedCount: number,
   startDate: string,
   endDate: string,
   includeWeekends: boolean,
+  travelerCount = 1,
 ): number {
   const dayCount = Math.max(1, workingDates(startDate, endDate, includeWeekends).length);
   if (selectedCount <= 0) return 1;
-  return clampMaxVisits(Math.ceil(selectedCount / dayCount));
+  return clampMaxVisits(Math.ceil(selectedCount / (dayCount * clampTravelerCount(travelerCount))));
 }
 
 export function balancedDaySizes(total: number, dayCount: number, maxPerDay: number): number[] {
@@ -488,37 +498,50 @@ export function buildRoutePlan(
     };
   }
 
-  const capacity = dates.length * maxPerDay;
+  const travelerCount = clampTravelerCount(settings.travelerCount ?? 1);
+  const perTravelerCapacity = dates.length * maxPerDay;
+  const capacity = perTravelerCapacity * travelerCount;
   const ranked = [...geoPoints].sort(
     (left, right) => haversineKm(centroidOf(geoPoints), left) - haversineKm(centroidOf(geoPoints), right),
   );
   const kept = ranked.slice(0, capacity);
   const overflow = ranked.slice(capacity);
-  const dayCount = Math.min(dates.length, Math.max(1, Math.ceil(kept.length / maxPerDay)));
-  const sizes = balancedDaySizes(kept.length, dayCount, maxPerDay);
-  const assigned = clusterByProximity(kept, sizes, depotCenter).sort((left, right) =>
-    compareByOfficeDistance(left, right, depotCenter),
-  );
 
-  const days: DailyRoute[] = assigned.map((cluster, index) => {
-    const date = dates[index] ?? "";
-    const ordered = shortestVisitOrder(cluster, startPoint, returnPoint);
-    const stops = buildStops(ordered, startPoint);
-    const lastStop = ordered[ordered.length - 1];
-    const commuteToReturnKm = lastStop ? Number(haversineKm(lastStop, returnPoint).toFixed(2)) : 0;
-    const labels = formatKoreanDate(date);
+  // Each traveler gets a territory of nearby visits, then plans their own days inside it.
+  const territorySizes = balancedDaySizes(kept.length, travelerCount, perTravelerCapacity);
+  const territories = (
+    travelerCount > 1 ? clusterByProximity(kept, territorySizes, depotCenter) : [kept]
+  ).sort((left, right) => compareByOfficeDistance(left, right, depotCenter));
 
-    return {
-      id: `day-${date}`,
-      date,
-      dayLabel: labels.dayLabel,
-      weekday: labels.weekday,
-      stops,
-      commuteToReturnKm,
-      totalDistanceKm: Number(
-        (stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0) + commuteToReturnKm).toFixed(2),
-      ),
-    };
+  const days: DailyRoute[] = territories.flatMap((territory, travelerIndex) => {
+    const dayCount = Math.min(dates.length, Math.max(1, Math.ceil(territory.length / maxPerDay)));
+    const sizes = balancedDaySizes(territory.length, dayCount, maxPerDay);
+    const assigned = clusterByProximity(territory, sizes, depotCenter).sort((left, right) =>
+      compareByOfficeDistance(left, right, depotCenter),
+    );
+
+    return assigned.map((cluster, dayIndex) => {
+      const date = dates[dayIndex] ?? "";
+      const ordered = shortestVisitOrder(cluster, startPoint, returnPoint);
+      const stops = buildStops(ordered, startPoint);
+      const lastStop = ordered[ordered.length - 1];
+      const commuteToReturnKm = lastStop ? Number(haversineKm(lastStop, returnPoint).toFixed(2)) : 0;
+      const labels = formatKoreanDate(date);
+
+      return {
+        id: `day-${travelerIndex + 1}-${date}`,
+        date,
+        dayLabel: labels.dayLabel,
+        weekday: labels.weekday,
+        travelerIndex,
+        travelerLabel: travelerLabel(travelerIndex),
+        stops,
+        commuteToReturnKm,
+        totalDistanceKm: Number(
+          (stops.reduce((sum, stop) => sum + stop.distanceFromPrevKm, 0) + commuteToReturnKm).toFixed(2),
+        ),
+      };
+    });
   });
 
   return {

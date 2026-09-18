@@ -33,6 +33,7 @@ export async function exportRoutePlanToExcel(options: {
 
   const startPoint = settings.startPoint;
   const returnPoint = resolvedReturnPoint(settings);
+  const travelerCount = Math.max(1, new Set(plan.days.map((day) => day.travelerIndex ?? 0)).size);
   const summaryRows = [
     ["항목", "내용"],
     ["지역", office.name],
@@ -40,7 +41,8 @@ export async function exportRoutePlanToExcel(options: {
     ["복귀지점", returnPoint ? `${returnPoint.name}${returnPoint.address ? ` (${returnPoint.address})` : ""}` : ""],
     ["출장 기간", `${settings.startDate} ~ ${settings.endDate}`],
     ["주말", settings.includeWeekends ? "포함" : "제외"],
-    ["일 최대 방문 가능 기관(학교) 수", settings.visitsPerDay],
+    ["출장 인원", `${travelerCount}명`],
+    ["1인 일 최대 방문지 수", settings.visitsPerDay],
     ["선택 기관 수", selectedCount],
     ["배정 기관 수", assignedCount],
     ["미배정 기관 수", plan.unassigned.length],
@@ -51,6 +53,7 @@ export async function exportRoutePlanToExcel(options: {
 
   const routeRows: Array<Array<string | number>> = [
     [
+      "출장자",
       "일자",
       "요일",
       "일차",
@@ -64,12 +67,19 @@ export async function exportRoutePlanToExcel(options: {
     ],
   ];
 
-  plan.days.forEach((day, dayIndex) => {
+  const dayNumbers = new Map<number, number>();
+
+  plan.days.forEach((day) => {
+    const travelerIndex = day.travelerIndex ?? 0;
+    const dayNumber = (dayNumbers.get(travelerIndex) ?? 0) + 1;
+    dayNumbers.set(travelerIndex, dayNumber);
+
     day.stops.forEach((stop) => {
       routeRows.push([
+        day.travelerLabel ?? `출장자 ${travelerIndex + 1}`,
         day.date,
         day.weekday,
-        dayIndex + 1,
+        dayNumber,
         stop.order,
         stop.institution.name,
         typeLabel(stop.institution.type),
@@ -103,7 +113,7 @@ export async function exportRoutePlanToExcel(options: {
     {
       name: "일자별 동선",
       rows: routeRows,
-      columnWidths: [12, 8, 8, 10, 28, 12, 12, 42, 14, 14],
+      columnWidths: [12, 12, 8, 8, 10, 28, 12, 12, 42, 14, 14],
     },
     { name: "미배정", rows: unassignedRows, columnWidths: [28, 12, 12, 42, 16] },
   ]);

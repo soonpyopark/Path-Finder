@@ -127,7 +127,7 @@ export function ControlPanel({
               title="새로고침"
               className="truncate text-xs font-semibold tracking-wide text-[var(--panel-brand)] transition hover:text-white"
             >
-              Path Finder v1.0.2
+              Path Finder v1.0.3
             </button>
             <button
               type="button"
@@ -446,9 +446,23 @@ export function ControlPanel({
               onChange={(returnPoint) => onSettingsChange({ returnPoint, returnSameAsStart: false })}
             />
           )}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
-            <label className="block min-w-0 text-xs text-slate-400">
-              일 최대 방문 가능 기관(학교) 수
+          <div className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-end gap-2">
+            <label className="block min-w-0 text-[11px] leading-4 text-slate-400">
+              출장 인원(명)
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={settings.travelerCount}
+                title="2명 이상이면 방문지를 가까운 곳끼리 나눠 사람별 동선을 만듭니다"
+                onChange={(event) =>
+                  onSettingsChange({ travelerCount: Number(event.target.value) || 1 })
+                }
+                className="mt-1 w-full rounded-lg border border-white/10 bg-[#0b1a2e] px-3 py-2 text-sm text-white outline-none ring-emerald-400 focus:ring-2"
+              />
+            </label>
+            <label className="block min-w-0 text-[11px] leading-4 text-slate-400">
+              1인 일 최대 방문지 수
               <input
                 type="number"
                 min={1}
@@ -543,11 +557,11 @@ const HELP_STEPS = [
   },
   {
     title: "4. 출장 조건을 정합니다",
-    body: "출발지는 기본이 선택한 교육청이며 검색해서 바꿀 수 있습니다. 복귀지점이 다르면 '복귀지점 따로 지정'을 누르세요. 하루 최대 방문 수, 주말 포함 여부, 기간도 여기서 정합니다.",
+    body: "출발지는 기본이 선택한 교육청이며 검색해서 바꿀 수 있습니다. 복귀지점이 다르면 '복귀지점 따로 지정'을 누르세요. 출장 인원, 1인 일 최대 방문지 수, 주말 포함 여부, 기간도 여기서 정합니다.",
   },
   {
     title: "5. 동선을 만들고 확인합니다",
-    body: "'동선생성'을 누르면 출발지에서 시작해 복귀지점으로 끝나는 가장 짧은 순서로 날짜별 일정이 만들어집니다. 날짜 탭을 누르면 지도가 그날 동선으로 이동하고, '전체 보기'로 모든 날짜를 한눈에 볼 수 있습니다.",
+    body: "'동선생성'을 누르면 출발지에서 시작해 복귀지점으로 끝나는 가장 짧은 순서로 날짜별 일정이 만들어집니다. 출장 인원이 2명 이상이면 방문지를 가까운 곳끼리 나눠 사람별 일정을 만들고, 출장자 칩으로 골라 볼 수 있습니다. 날짜 탭을 누르면 지도가 그날 동선으로 이동합니다.",
   },
   {
     title: "6. 결과를 저장합니다",

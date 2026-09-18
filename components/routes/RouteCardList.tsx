@@ -32,13 +32,19 @@ export function RouteCardList({
   const activeDay = days.find((day) => day.id === activeDayId) ?? days[0] ?? null;
   const showingUnassigned = activeDayId === "unassigned";
 
-  const summary = useMemo(
-    () =>
-      days.length === 0
-        ? "아직 생성된 동선이 없습니다."
-        : `${days.length}일 · ${assignedCount}곳 · ${totalDistance} km`,
-    [assignedCount, days.length, totalDistance],
+  const travelers = useMemo(() => groupByTraveler(days), [days]);
+  const activeTravelerIndex = activeDay?.travelerIndex ?? 0;
+  const visibleDays = useMemo(
+    () => (travelers.length > 1 ? days.filter((day) => day.travelerIndex === activeTravelerIndex) : days),
+    [activeTravelerIndex, days, travelers.length],
   );
+  const dateCount = useMemo(() => new Set(days.map((day) => day.date)).size, [days]);
+
+  const summary = useMemo(() => {
+    if (days.length === 0) return "아직 생성된 동선이 없습니다.";
+    const head = travelers.length > 1 ? `${travelers.length}명 · ` : "";
+    return `${head}${dateCount}일 · ${assignedCount}곳 · ${totalDistance} km`;
+  }, [assignedCount, dateCount, days.length, totalDistance, travelers.length]);
 
   if (days.length === 0 && unassigned.length === 0) {
     return (
@@ -77,9 +83,35 @@ export function RouteCardList({
         }
       />
 
+      {travelers.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-white px-4 py-2">
+          {travelers.map((traveler) => {
+            const active = !showingUnassigned && traveler.index === activeTravelerIndex;
+            return (
+              <button
+                key={traveler.index}
+                type="button"
+                onClick={() => {
+                  const firstDay = traveler.days[0];
+                  if (firstDay) onSelectDay(firstDay.id);
+                }}
+                aria-pressed={active}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  active
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {traveler.label} · {traveler.stopCount}곳 · {traveler.distanceKm.toFixed(1)} km
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       <DayTabStrip>
         <div className="flex w-max min-w-full gap-2 px-1 py-3">
-        {days.map((day, index) => {
+        {visibleDays.map((day, index) => {
           const color = DAY_COLORS[index % DAY_COLORS.length];
           const active = !showingUnassigned && day.id === (activeDay?.id ?? "");
           return (
@@ -127,7 +159,12 @@ export function RouteCardList({
           ) : activeDay ? (
             <DayDetail
               day={activeDay}
-              color={DAY_COLORS[days.findIndex((item) => item.id === activeDay.id) % DAY_COLORS.length]}
+              showTraveler={travelers.length > 1}
+              color={
+                DAY_COLORS[
+                  Math.max(0, visibleDays.findIndex((item) => item.id === activeDay.id)) % DAY_COLORS.length
+                ]
+              }
               startPoint={startPoint}
               returnPoint={returnPoint}
             />
@@ -265,6 +302,35 @@ function ResultsToolbar({
   );
 }
 
+interface TravelerGroup {
+  index: number;
+  label: string;
+  days: DailyRoute[];
+  stopCount: number;
+  distanceKm: number;
+}
+
+function groupByTraveler(days: DailyRoute[]): TravelerGroup[] {
+  const groups = new Map<number, TravelerGroup>();
+
+  days.forEach((day) => {
+    const index = day.travelerIndex ?? 0;
+    const group = groups.get(index) ?? {
+      index,
+      label: day.travelerLabel ?? `출장자 ${index + 1}`,
+      days: [],
+      stopCount: 0,
+      distanceKm: 0,
+    };
+    group.days.push(day);
+    group.stopCount += day.stops.length;
+    group.distanceKm += day.totalDistanceKm;
+    groups.set(index, group);
+  });
+
+  return [...groups.values()].sort((left, right) => left.index - right.index);
+}
+
 function DepotRow({
   label,
   point,
@@ -305,17 +371,24 @@ function DayDetail({
   color,
   startPoint,
   returnPoint,
+  showTraveler = false,
 }: {
   day: DailyRoute;
   color: string;
   startPoint: TripWaypoint;
   returnPoint: TripWaypoint;
+  showTraveler?: boolean;
 }) {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">
+          <p className="flex items-center gap-2 truncate text-sm font-semibold text-slate-900">
+            {showTraveler ? (
+              <span className="shrink-0 rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-semibold text-white">
+                {day.travelerLabel}
+              </span>
+            ) : null}
             {day.dayLabel} ({day.weekday})
           </p>
           <p className="text-xs text-slate-500">{day.date}</p>
@@ -395,6 +468,8 @@ function AllDaysModal({
   onClose: () => void;
 }) {
   const sameDepot = waypointsEqual(startPoint, returnPoint);
+  const travelers = groupByTraveler(days);
+  const multiTraveler = travelers.length > 1;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
       <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -416,7 +491,17 @@ function AllDaysModal({
           </button>
         </div>
         <div className="panel-scroll space-y-4 overflow-y-auto p-5">
-          {days.map((day, index) => (
+          {travelers.map((traveler) => (
+            <div key={traveler.index} className="space-y-4">
+              {multiTraveler ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-900 px-4 py-2 text-white">
+                  <p className="text-sm font-semibold">{traveler.label}</p>
+                  <p className="text-xs text-slate-200">
+                    {traveler.days.length}일 · {traveler.stopCount}곳 · {traveler.distanceKm.toFixed(1)} km
+                  </p>
+                </div>
+              ) : null}
+              {traveler.days.map((day, index) => (
             <section key={day.id} className="rounded-2xl border border-slate-200 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <p className="font-semibold text-slate-900">
@@ -457,6 +542,8 @@ function AllDaysModal({
                 </li>
               </ol>
             </section>
+              ))}
+            </div>
           ))}
           {unassigned.length > 0 ? (
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">

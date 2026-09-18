@@ -31,7 +31,8 @@ function createDefaultSettings(office: EducationOffice = getEducationOffice(DEFA
     startDate,
     endDate,
     includeWeekends: false,
-    visitsPerDay: suggestedVisitsPerDay(selectedCount, startDate, endDate, false),
+    travelerCount: 1,
+    visitsPerDay: suggestedVisitsPerDay(selectedCount, startDate, endDate, false, 1),
     startPoint: waypoint,
     returnPoint: waypoint,
     returnSameAsStart: true,
@@ -83,7 +84,12 @@ export function PathFinderApp() {
 
   useEffect(() => {
     setSettings((current) => {
-      if (current.startPoint && current.returnPoint && typeof current.returnSameAsStart === "boolean") {
+      if (
+        current.startPoint &&
+        current.returnPoint &&
+        typeof current.returnSameAsStart === "boolean" &&
+        typeof current.travelerCount === "number"
+      ) {
         return current;
       }
       const waypoint = waypointFromOffice(office);
@@ -92,6 +98,7 @@ export function PathFinderApp() {
         startPoint: current.startPoint ?? waypoint,
         returnPoint: current.returnPoint ?? waypoint,
         returnSameAsStart: current.returnSameAsStart ?? true,
+        travelerCount: current.travelerCount ?? 1,
       };
     });
   }, [office]);
@@ -103,11 +110,18 @@ export function PathFinderApp() {
         current.startDate,
         current.endDate,
         current.includeWeekends,
+        current.travelerCount,
       );
       if (visitsPerDay === current.visitsPerDay) return current;
       return { ...current, visitsPerDay };
     });
-  }, [selected.length, settings.startDate, settings.endDate, settings.includeWeekends]);
+  }, [
+    selected.length,
+    settings.startDate,
+    settings.endDate,
+    settings.includeWeekends,
+    settings.travelerCount,
+  ]);
 
   const runSearch = useCallback(async (nextQuery: string, nextOffice: string, nextDistrict: string) => {
     const keyword = nextQuery.trim();
@@ -297,6 +311,7 @@ export function PathFinderApp() {
           settings.startDate,
           settings.endDate,
           settings.includeWeekends,
+          settings.travelerCount,
         ),
       };
       setSettings(nextSettings);

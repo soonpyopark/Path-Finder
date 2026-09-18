@@ -61,6 +61,11 @@ function KakaoMapInner({
   const frameRef = useRef<HTMLDivElement>(null);
 
   const activeDay = days.find((day) => day.id === activeDayId) ?? days[0];
+  // Only the selected traveler's days are drawn, so overlapping territories stay readable.
+  const travelerDays = useMemo(
+    () => (activeDay ? days.filter((day) => day.travelerIndex === activeDay.travelerIndex) : days),
+    [activeDay, days],
+  );
 
   const focusPoints = useMemo(() => {
     const stops = activeDay?.stops.flatMap((stop) =>
@@ -133,7 +138,8 @@ function KakaoMapInner({
           { lat: returnPoint.lat, lng: returnPoint.lng },
         ]
       : [];
-  const activeColor = DAY_COLORS[Math.max(0, days.findIndex((day) => day.id === activeDay?.id)) % DAY_COLORS.length];
+  const activeColor =
+    DAY_COLORS[Math.max(0, travelerDays.findIndex((day) => day.id === activeDay?.id)) % DAY_COLORS.length];
 
   return (
     <div ref={frameRef} className="w-full">
@@ -145,7 +151,7 @@ function KakaoMapInner({
       className="h-full w-full"
       onCreate={setMap}
     >
-      {days.map((day, dayIndex) => {
+      {travelerDays.map((day, dayIndex) => {
         const path = day.stops.flatMap((stop) =>
           hasCoordinates(stop.institution)
             ? [{ lat: stop.institution.lat, lng: stop.institution.lng }]
