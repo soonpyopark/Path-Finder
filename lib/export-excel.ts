@@ -42,7 +42,7 @@ export async function exportRoutePlanToExcel(options: {
     ["출장 기간", `${settings.startDate} ~ ${settings.endDate}`],
     ["주말", settings.includeWeekends ? "포함" : "제외"],
     ["출장 인원", `${travelerCount}명`],
-    ["1인 일 최대 방문지 수", settings.visitsPerDay],
+    ["1인/일 최대 방문수", settings.visitsPerDay],
     ["선택 기관 수", selectedCount],
     ["배정 기관 수", assignedCount],
     ["미배정 기관 수", plan.unassigned.length],
