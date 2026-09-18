@@ -446,7 +446,7 @@ export function ControlPanel({
               onChange={(returnPoint) => onSettingsChange({ returnPoint, returnSameAsStart: false })}
             />
           )}
-          <div className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-end gap-2">
+          <div className="grid grid-cols-3 items-end gap-2">
             <label className="block min-w-0 text-[11px] leading-4 text-slate-400">
               출장 인원(명)
               <input
@@ -478,7 +478,7 @@ export function ControlPanel({
               type="button"
               onClick={() => onSettingsChange({ includeWeekends: !settings.includeWeekends })}
               aria-pressed={settings.includeWeekends}
-              className={`inline-flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-3 text-sm ${
+              className={`inline-flex h-[38px] w-full items-center justify-center whitespace-nowrap rounded-lg px-2 text-sm ${
                 settings.includeWeekends ? "bg-emerald-500/20 text-emerald-200" : "bg-black/20 text-slate-300"
               }`}
             >
